@@ -32,17 +32,29 @@ void MOTOR::init() {
 	HBRIDGE_A_INB.init(true, 1, 0);
 	RedLED.init(true, 1, 0);
 	pe2.init(true,1,1);
-
-
 }
 
 void MOTOR::run() {
+	PRINTF("Motor test programm\nStarting at 0%%, going to 100%% in 1%%-steps every second\n");
+	for (int i = 0; i < 101; i++) {
+		Motor.write((unsigned int)(i*10));
+		PRINTF("Motor running at %d\n",i);
+		suspendCallerUntil(NOW()+1*SECONDS);
+	}
+	Motor.write(750);
+	suspendCallerUntil(NOW()+1*SECONDS);
+	Motor.write(300);
+	suspendCallerUntil(NOW()+1*SECONDS);
+	Motor.write(0);
+	suspendCallerUntil(NOW()+1*SECONDS);
+	PRINTF("Other way round!\n");
+	HBRIDGE_A_INA.setPins(~HBRIDGE_A_INA.readPins());
+	HBRIDGE_A_INB.setPins(~HBRIDGE_A_INB.readPins());
+	for (int i = 0; i < 101; i++) {
+		Motor.write((unsigned int)(i*10));
+		PRINTF("Motor running at -%d%%\n",i);
+		suspendCallerUntil(NOW()+1*SECONDS);
+	}
 
-//	while(1) {
-//		suspendCallerUntil();
-		int duty_cycle = 200;		//duty_cycle in %*10, e.g. 200 means 20% duty cycle
-		Motor.write(duty_cycle);
-		PRINTF("Motor running at %f\n",duty_cycle*0.1);
-//	}
 }
 

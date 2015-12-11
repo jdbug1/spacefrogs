@@ -73,7 +73,7 @@ void IMU::run() {
 //	calibrateGyro();
 //	calibrateMag();
 //	calibrateAcc();
-	suspendCallerUntil();
+//	suspendCallerUntil();
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
 		calculateGyro();
 		calculateMag();

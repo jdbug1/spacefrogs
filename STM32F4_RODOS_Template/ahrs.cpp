@@ -15,7 +15,7 @@ void AHRS::init() {
 }
 
 void AHRS::run() {
-	suspendCallerUntil();
+	suspendCallerUntil(NOW()+1*SECONDS);
 	while(1) {
 		imuBuffer.get(imu_data);
 		if (!imu_data.calibrating) {

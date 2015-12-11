@@ -13,8 +13,9 @@
 #include "imu.h"
 #include "ahrs.h"
 #include "motor.h"
-#include "lightsensor.h"
-#include "Camera/camera.h"
+//#include "lightsensor.h"
+//#include "Camera/camera.h"
+//#include "Electrical.h"
 
 static Application module01("Template", 2001);
 
@@ -23,17 +24,19 @@ Topic<RPY> ahrs_topic(2,"ahrs");
 Topic<RPY> xm_topic(3,"xm");
 Topic<RPY> gyro_topic(4,"gyro");
 
+/* Uncomment if you want to use something */
 
 IMU imu("imu");
 AHRS ahrs("ahrs");
 MOTOR motor("motor");
-lightsensor light("light");
+//lightsensor light("light");
+//Electrical knife("knife");
+//camera cam("cam");
 
 namespace RODOS {
 extern HAL_UART uart_stdout;
 }
 
-//camera cam("cam");
 
 #define BT_UART UART_IDX2
 #define USB_UART UART_IDX3
