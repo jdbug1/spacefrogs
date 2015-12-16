@@ -23,6 +23,9 @@ public:
 	void run();
 
 	void readRaw(int16_t *channel_1, int16_t *channel_2);
+
+private:
+	bool send_data;
 };
 
 #endif /* LIGHTSENSOR_H_ */

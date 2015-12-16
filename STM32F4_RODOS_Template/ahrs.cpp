@@ -15,7 +15,7 @@ void AHRS::init() {
 }
 
 void AHRS::run() {
-	suspendCallerUntil(NOW()+1*SECONDS);
+	suspendCallerUntil();
 	while(1) {
 		imuBuffer.get(imu_data);
 		if (!imu_data.calibrating) {
@@ -72,6 +72,7 @@ void AHRS::calculateGyroEuler() {
 		gyro_euler.pitch = ahrs_euler.pitch + 	(((cr*cp*imu_data.wy - sr*cp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
 		gyro_euler.roll = ahrs_euler.roll + 	(((cp*imu_data.wx + sr*sp*imu_data.wy + cr*sp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
 		gyro_euler.heading = ahrs_euler.heading + (((sr*imu_data.wy + cr*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
+
 	}
 
 }
@@ -81,6 +82,7 @@ void AHRS::complementaryFilter() {
 		ahrs_euler.pitch = ((0.1)*xm_euler.pitch) + (0.9*gyro_euler.pitch);
 		ahrs_euler.roll = ((0.1)*xm_euler.roll) + (0.9*gyro_euler.roll);
 		ahrs_euler.heading = ((0.1)*xm_euler.heading) + (0.9*gyro_euler.heading);
+
 	}
 	//PRINTF("%f %f %f \n%f %f %f\n",xm_euler.pitch,xm_euler.roll,xm_euler.heading,gyro_euler.pitch,gyro_euler.roll,gyro_euler.heading);
 }

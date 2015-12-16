@@ -10,6 +10,12 @@ public:
 	IMU(const char* name);
 	virtual ~IMU();
 
+	void setCalibrateMagnetometer();
+	void setCalibrateGyroscope();
+	void setCalibrateAccelerometer();
+
+private:
+
 	void init();
 	void initSensors();
 	void run();
@@ -27,15 +33,21 @@ public:
 	void calculateMag();
 	void calibrateMag();
 
-
+	void calculateAccEuler();
+	void calculateHeading();
+	void calculateGyroEuler();
+	void complementaryFilter();
 
 private:
 	int g_counter, a_counter, m_counter;
 	xyz16 a_offset, a_raw, m_raw, g_raw;
 	xyz32 a_temp, m_temp, g_temp;
 	magMaxMin m_offset;
-	imuData values;
+	imuData imu_data;
 	xyzFloat g_offset;
+	RPY xm_euler, gyro_euler, ahrs_euler;
+	imuPublish publish;
+	bool calibrate_magnetometer, calibrate_gyroscope, calibrate_accelerometer;
 };
 
 #endif

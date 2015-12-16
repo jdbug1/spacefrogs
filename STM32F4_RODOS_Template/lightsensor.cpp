@@ -22,8 +22,7 @@ uint8_t CHANNEL_1_LOW[1] = {DATA_1_LOW | 0xA0};
 
 
 lightsensor::lightsensor(const char* name) : Thread(name) {
-	// TODO Auto-generated constructor stub
-
+	send_data = false;
 }
 
 lightsensor::~lightsensor() {
@@ -31,23 +30,25 @@ lightsensor::~lightsensor() {
 }
 
 void lightsensor::init() {
-	HAL_I2C2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
+	HAL_I2C_2.init(400000);
+	HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
 }
 
 void lightsensor::run() {
 	int16_t channel_0, channel_1;
+	suspendCallerUntil();
 	while(1) {
-		suspendCallerUntil();
 		readRaw(&channel_0,&channel_1);
-		PRINTF("Channel 0 %d Channel 1 %d\n",channel_0,channel_1);
-		//suspendCallerUntil(NOW()+1*SECONDS);
+		light_topic.publish(channel_0);
+		//PRINTF("Channel_0 %d Channel_1 %d\n",channel_0,channel_1);
+		suspendCallerUntil(NOW()+2*MILLISECONDS);
 	}
 }
 
 void lightsensor::readRaw(int16_t *channel_0, int16_t *channel_1) {
 	uint8_t data[2];
-	int retVal = HAL_I2C2.writeRead(LIGHT_SLAVE,CHANNEL_0_LOW,1,data,2);
+	int retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_0_LOW,1,data,2);
 	*channel_0 = data[1] << 8 | data[0];
-	retVal = HAL_I2C2.writeRead(LIGHT_SLAVE,CHANNEL_1_LOW,1,data,2);
+	retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_1_LOW,1,data,2);
 	*channel_1 = data[1] << 8 | data[0];
 }

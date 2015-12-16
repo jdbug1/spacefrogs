@@ -17,7 +17,6 @@ uint8_t LSM9DS0_OUT_X_L_G[1] = {0x28 | 0x80}; // Gyroscope OUT_X_L address with 
 uint8_t LSM9DS0_OUT_X_L_A[1] = {0x28 | 0x80}; // Accelerometer OUT_X_L address with multiple bytes indicator (0x80)
 uint8_t LSM9DS0_OUT_X_L_M[1] = {0x08 | 0x80}; // Magnetometer OUT_X_L address with multiple bytes indicator (0x80)
 
-HAL_I2C HAL_I2C2(I2C_IDX2);
 
 HAL_GPIO CS_G(GPIO_018); /* declare HAL_GPIO for GPIO_018 = PB2 (IMU Chip Select pin for the Gyro) */
 HAL_GPIO IMU_EN(GPIO_055); /* declare HAL_GPIO for GPIO_055 = PD7 (IMU Power Enable pin) */
@@ -44,7 +43,7 @@ IMU::~IMU() {
 }
 
 void IMU::init() {
-	HAL_I2C2.init(400000);
+	HAL_I2C_2.init(400000);
 	IMU_EN.init(true,1,1);
 
 	/* Userbutton for calibration */
@@ -58,33 +57,49 @@ void IMU::init() {
 void IMU::initSensors() {
 	CS_G.init(true,1,1);
 	/* initialize Gyro */
-	HAL_I2C2.write(LSM9DS0_G, CTRL_REG1_G, 2);
-	HAL_I2C2.write(LSM9DS0_G, CTRL_REG4_G, 2);
+	HAL_I2C_2.write(LSM9DS0_G, CTRL_REG1_G, 2);
+	HAL_I2C_2.write(LSM9DS0_G, CTRL_REG4_G, 2);
 
 	/* initialize Acc and Mag */
-	HAL_I2C2.write(LSM9DS0_XM, CTRL_REG1_XM, 2);
-	HAL_I2C2.write(LSM9DS0_XM, CTRL_REG2_XM, 2);
-	HAL_I2C2.write(LSM9DS0_XM, CTRL_REG5_XM, 2);
-	HAL_I2C2.write(LSM9DS0_XM, CTRL_REG6_XM, 2);
-	HAL_I2C2.write(LSM9DS0_XM, CTRL_REG7_XM, 2);
+	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG1_XM, 2);
+	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG2_XM, 2);
+	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG5_XM, 2);
+	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG6_XM, 2);
+	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG7_XM, 2);
 }
 
 void IMU::run() {
-//	calibrateGyro();
-//	calibrateMag();
-//	calibrateAcc();
-//	suspendCallerUntil();
+	//suspendCallerUntil();
+	int counter = 0;
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
-		calculateGyro();
-		calculateMag();
-		calculateAcc();
-		imu_topic.publish(values);
+		if (calibrate_magnetometer) {
+			calibrateMag();
+		} else if (calibrate_gyroscope) {
+			calibrateGyro();
+		} else if (calibrate_accelerometer) {
+			calibrateAcc();
+		} else {
+			calculateGyro();
+			calculateMag();
+			calculateAcc();
+			imu_topic.publish(imu_data);
+			counter++;
+			if (counter == MEAN_FILTER_SAMPLES) {
+				complementaryFilter();
+				publish.heading = ahrs_euler.heading;
+				publish.roll = ahrs_euler.roll;
+				publish.pitch = ahrs_euler.pitch;
+				publish.wx = imu_data.wx;
+				ahrs_topic.publish(publish);
+				counter = 0;
+			}
+		}
 	}
 }
 
 void IMU::I2CError() {
-	HAL_I2C2.reset();
-	HAL_I2C2.init(400000);
+	HAL_I2C_2.reset();
+	HAL_I2C_2.init(400000);
 	IMU_EN.setPins(0);
 	suspendCallerUntil(NOW()+5*MILLISECONDS);
 	IMU_EN.setPins(1);
@@ -97,8 +112,8 @@ void IMU::I2CError() {
  */
 void IMU::readGyro() {
 	uint8_t data[6] = {};
-	int retVal = HAL_I2C2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
-	HAL_I2C2.suspendUntilReadFinished();
+	int retVal = HAL_I2C_2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
+	HAL_I2C_2.suspendUntilReadFinished();
 	if (retVal <= 0) {
 		I2CError();
 	} else {
@@ -108,6 +123,7 @@ void IMU::readGyro() {
 	}
 }
 
+/* calculate angular rate [rad/s] */
 void IMU::calculateGyro() {
 	readGyro();
 	if (g_counter < MEAN_FILTER_SAMPLES) {
@@ -117,9 +133,9 @@ void IMU::calculateGyro() {
 		g_temp.z += g_raw.z;
 	}
 	if (g_counter == MEAN_FILTER_SAMPLES) {
-		values.wx = degToRad(((g_temp.x/(float)MEAN_FILTER_SAMPLES)-g_offset.x)*GYRO_SENSITIVITY);
-		values.wy = degToRad(((g_temp.y/(float)MEAN_FILTER_SAMPLES)-g_offset.y)*GYRO_SENSITIVITY);
-		values.wz = degToRad(((g_temp.z/(float)MEAN_FILTER_SAMPLES)-g_offset.z)*GYRO_SENSITIVITY);
+		imu_data.wx = degToRad(((g_temp.x/(float)MEAN_FILTER_SAMPLES)-g_offset.x)*GYRO_SENSITIVITY);
+		imu_data.wy = degToRad(((g_temp.y/(float)MEAN_FILTER_SAMPLES)-g_offset.y)*GYRO_SENSITIVITY);
+		imu_data.wz = degToRad(((g_temp.z/(float)MEAN_FILTER_SAMPLES)-g_offset.z)*GYRO_SENSITIVITY);
 		g_counter = 0;
 		g_temp.x = g_temp.y = g_temp.z = 0;
 
@@ -127,8 +143,8 @@ void IMU::calculateGyro() {
 }
 
 void IMU::calibrateGyro() {
-	values.calibrating = true;
-	imu_topic.publish(values);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	PRINTF("Calibrating gyro...\n");
 	int16_t tempX =0, tempY = 0, tempZ = 0;
 	g_temp.x = g_temp.y = g_temp.z = 0;
@@ -137,8 +153,8 @@ void IMU::calibrateGyro() {
 	int j = 0;
 	for (int i = 0; i < CALIBRATION_VALUES; i++) {
 		j = i;
-		int retVal = HAL_I2C2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
-		HAL_I2C2.suspendUntilReadFinished();
+		int retVal = HAL_I2C_2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
+		HAL_I2C_2.suspendUntilReadFinished();
 		if (retVal <= 0) {
 			I2CError();
 			failCounter++;
@@ -157,9 +173,10 @@ void IMU::calibrateGyro() {
 	g_offset.y = g_temp.y/(float)(CALIBRATION_VALUES-failCounter);
 	g_offset.z = g_temp.z/(float)(CALIBRATION_VALUES-failCounter);
 	g_temp.x = g_temp.y = g_temp.z = 0;
-	values.calibrating = false;
+	imu_data.calibrating = false;
 	PRINTF("Gyro Offsets [raw] Found: X %f Y %f Z %f\n",j, g_offset.x,g_offset.y,g_offset.z);
 	suspendCallerUntil(NOW()+2*SECONDS);
+	calibrate_gyroscope = false;
 }
 
 /**
@@ -167,7 +184,7 @@ void IMU::calibrateGyro() {
  */
 void IMU::readAcc() {
 	uint8_t data[6] = { };
-	int retVal = HAL_I2C2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_A, 1, data, 6);
+	int retVal = HAL_I2C_2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_A, 1, data, 6);
 	if (retVal <= 0)
 		I2CError();
 	else {
@@ -177,6 +194,7 @@ void IMU::readAcc() {
 	}
 }
 
+/* calculate linear velocity [mg] */
 void IMU::calculateAcc() {
 	readAcc();
 	if (a_counter < MEAN_FILTER_SAMPLES) {
@@ -186,9 +204,9 @@ void IMU::calculateAcc() {
 		a_temp.z += a_raw.z;
 	}
 	if (a_counter == MEAN_FILTER_SAMPLES) {
-		values.ax = (((float)a_temp.x/MEAN_FILTER_SAMPLES)-a_offset.x)*ACC_SENSITIVITY;
-		values.ay = (((float)a_temp.y/MEAN_FILTER_SAMPLES)-a_offset.y)*ACC_SENSITIVITY;
-		values.az = (((float)a_temp.z/MEAN_FILTER_SAMPLES)-a_offset.z)*ACC_SENSITIVITY;
+		imu_data.ax = (((float)a_temp.x/MEAN_FILTER_SAMPLES)-a_offset.x)*ACC_SENSITIVITY;
+		imu_data.ay = (((float)a_temp.y/MEAN_FILTER_SAMPLES)-a_offset.y)*ACC_SENSITIVITY;
+		imu_data.az = (((float)a_temp.z/MEAN_FILTER_SAMPLES)-a_offset.z)*ACC_SENSITIVITY;
 		a_counter = 0;
 		a_temp.x = a_temp.y = a_temp.z = 0;
 
@@ -196,8 +214,8 @@ void IMU::calculateAcc() {
 }
 
 void IMU::calibrateAcc() {
-	values.calibrating = true;
-	imu_topic.publish(values);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	bool buttonPressed = false;
 	USERBUTTON.resetInterruptEventStatus();
 	bool xAxis = false, yAxis = false, zAxis = false;
@@ -259,9 +277,10 @@ void IMU::calibrateAcc() {
 	a_offset.x /= 2.0;
 	a_offset.y /=2.0;
 	a_offset.z /= 2.0;
-	values.calibrating = false;
+	imu_data.calibrating = false;
 	PRINTF("Offsets [mg] found!\nX: %5.2f Y: %5.2f Z: %5.2f\n",a_offset.x*ACC_SENSITIVITY,a_offset.y*ACC_SENSITIVITY,a_offset.z*ACC_SENSITIVITY);
 	suspendCallerUntil(NOW()+2*SECONDS);
+	calibrate_accelerometer = false;
 }
 
 
@@ -270,7 +289,7 @@ void IMU::calibrateAcc() {
  */
 void IMU::readMag() {
 	uint8_t data[6] = { };
-	int retVal = HAL_I2C2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_M, 1, data, 6);
+	int retVal = HAL_I2C_2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_M, 1, data, 6);
 	if (retVal <= 0)
 		I2CError();
 	else {
@@ -280,6 +299,7 @@ void IMU::readMag() {
 	}
 }
 
+/* calculate and normalize magnetometer data */
 void IMU::calculateMag() {
 	if (m_counter < MEAN_FILTER_SAMPLES) {
 		m_counter++;
@@ -289,17 +309,17 @@ void IMU::calculateMag() {
 		m_temp.z += m_raw.z;
 	}
 	if (m_counter == MEAN_FILTER_SAMPLES) {
-		values.mx = ((((float)m_temp.x/MEAN_FILTER_SAMPLES)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
-		values.my = ((((float)m_temp.y/MEAN_FILTER_SAMPLES)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
-		values.mz = ((((float)m_temp.z/MEAN_FILTER_SAMPLES)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
+		imu_data.mx = ((((float)m_temp.x/MEAN_FILTER_SAMPLES)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
+		imu_data.my = ((((float)m_temp.y/MEAN_FILTER_SAMPLES)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
+		imu_data.mz = ((((float)m_temp.z/MEAN_FILTER_SAMPLES)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
 		m_counter = 0;
 		m_temp.x = m_temp.y = m_temp.z = 0;
 	}
 }
 
 void IMU::calibrateMag() {
-	values.calibrating = true;
-	imu_topic.publish(values);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	bool buttonPressed = false;
 	PRINTF("Calibrating Magnetometer! Move around every axis!\nPress UserButton, if finished!\n");
 	while (!buttonPressed) {
@@ -317,7 +337,66 @@ void IMU::calibrateMag() {
 			m_offset.xMax, m_offset.xMin,
 			m_offset.yMax, m_offset.yMin,
 			m_offset.zMax, m_offset.zMin);
-	values.calibrating = false;
+	imu_data.calibrating = false;
+	suspendCallerUntil(NOW()+2*SECONDS);
+	calibrate_magnetometer = false;
 }
 
+void IMU::setCalibrateMagnetometer() {
+	calibrate_magnetometer = true;
+}
+
+void IMU::setCalibrateGyroscope() {
+	calibrate_gyroscope = true;
+}
+
+void IMU::setCalibrateAccelerometer() {
+	calibrate_accelerometer = true;
+}
+
+/** AHRS */
+
+void IMU::calculateAccEuler() {
+	xm_euler.roll = imu_data.ax / sqrt(imu_data.ay*imu_data.ay + imu_data.az*imu_data.az);
+	xm_euler.pitch = imu_data.ay / sqrt(imu_data.ax*imu_data.ax + imu_data.az*imu_data.az);
+}
+
+void IMU::calculateHeading() {
+	float sr = sin(xm_euler.roll);
+	float cr = cos(xm_euler.roll);
+	float sp = sin(xm_euler.pitch);
+	float cp = cos(xm_euler.pitch);
+	float mxh, myh = 0.0;
+	mxh = imu_data.mx * cp + imu_data.mz * sp;
+	myh = imu_data.mx * sr * sp + imu_data.my * cr - imu_data.mz * sr * cp;
+	xm_euler.heading = atan2(myh,mxh);
+	if (xm_euler.heading < 0) xm_euler.heading +=2*M_PI;
+}
+
+void IMU::calculateGyroEuler() {
+	float sr = sin(ahrs_euler.roll);
+	float cr = cos(ahrs_euler.roll);
+	float sp = sin(ahrs_euler.pitch);
+	float cp = cos(ahrs_euler.pitch);
+
+	if (cp != 0) {
+		gyro_euler.pitch = ahrs_euler.pitch + 	(((cr*cp*imu_data.wy - sr*cp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
+		gyro_euler.roll = ahrs_euler.roll + 	(((cp*imu_data.wx + sr*sp*imu_data.wy + cr*sp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
+		gyro_euler.heading = ahrs_euler.heading + (((sr*imu_data.wy + cr*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
+
+	}
+
+}
+
+void IMU::complementaryFilter() {
+	calculateAccEuler();
+	calculateHeading();
+	calculateGyroEuler();
+	if (!isnan(gyro_euler.pitch) | !isnan(gyro_euler.roll) | !isnan(gyro_euler.heading)) {
+		ahrs_euler.pitch = ((0.1)*xm_euler.pitch) + (0.9*gyro_euler.pitch);
+		ahrs_euler.roll = ((0.1)*xm_euler.roll) + (0.9*gyro_euler.roll);
+		ahrs_euler.heading = ((0.1)*xm_euler.heading) + (0.9*gyro_euler.heading);
+
+	}
+}
 

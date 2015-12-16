@@ -37,7 +37,7 @@
 #define ALPHA 0.9					// gain of complementary filter
 
 /* I2Cs */
-extern HAL_I2C HAL_I2C2;
+extern HAL_I2C HAL_I2C_2;
 
 /* important structs */
 
@@ -66,16 +66,23 @@ struct RPY {
 };
 
 struct imuData {
-	float ax;
-	float ay;
-	float az;
-	float mx;
-	float my;
-	float mz;
+		float ax;
+		float ay;
+		float az;
+		float mx;
+		float my;
+		float mz;
+		float wx;
+		float wy;
+		float wz;
+		bool calibrating;
+};
+
+struct imuPublish {
 	float wx;
-	float wy;
-	float wz;
-	bool calibrating;
+	float roll;
+	float pitch;
+	float heading;
 };
 
 struct magMaxMin {
@@ -151,18 +158,24 @@ static inline char findAxis(struct xyz32 *axis) {
 
 extern Topic<imuData> imu_topic;
 static CommBuffer<imuData> imuBuffer;
-static Subscriber imuSubscriber(imu_topic, imuBuffer);
+static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
 
-extern Topic<RPY> ahrs_topic;
-static CommBuffer<RPY> ahrsBuffer;
-static Subscriber ahrsSubscriber(ahrs_topic,ahrsBuffer);
+extern Topic<imuPublish> ahrs_topic;
+static CommBuffer<imuPublish> ahrsBuffer;
+static Subscriber ahrsSubscriber(ahrs_topic, ahrsBuffer, "AHRS Subscriber");
 
 extern Topic<RPY> xm_topic;
 static CommBuffer<RPY> xmBuffer;
-static Subscriber xmSubscriber(xm_topic,xmBuffer);
+static Subscriber xmSubscriber(xm_topic,xmBuffer, "XM Subscriber");
 
 extern Topic<RPY> gyro_topic;
 static CommBuffer<RPY> gyroBuffer;
-static Subscriber gyroSubscriber(gyro_topic,gyroBuffer);
+static Subscriber gyroSubscriber(gyro_topic,gyroBuffer, "Gyro Subscriber");
+
+extern Topic<int16_t> light_topic;
+static CommBuffer<int16_t> lightBuffer;
+static Subscriber lightSubscriber(light_topic,lightBuffer, "Light Subscriber");
+
+extern HAL_UART uart3;
 
 #endif /* BASICS_H_ */

@@ -10,6 +10,7 @@
 
 #include "rodos.h"
 #include "hal.h"
+#include "basics.h"
 
 class Electrical : public Thread {
 public:
@@ -18,6 +19,16 @@ public:
 
 	void init();
 	void run();
+
+	void setMainMotorSpeed(int *speed);
+	void setDeployment1Speed(int *speed);
+	void setDeployment2Speed(int *speed);
+	void setKnife(int *status);
+	void setMagnet(int *status);
+
+
+	bool knife_active, magnet_active;
+
 };
 
 #endif /* ELECTRICAL_H_ */
