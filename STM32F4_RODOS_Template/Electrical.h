@@ -25,9 +25,12 @@ public:
 	void setDeployment2Speed(int *speed);
 	void setKnife(int *status);
 	void setMagnet(int *status);
+	void readLightsensor(int16_t *channel_0, int16_t *channel_1);
+	void setLightsensor(int *value);
 
 
-	bool knife_active, magnet_active;
+	bool read_lightsensor;
+	bool em, knife;
 
 };
 

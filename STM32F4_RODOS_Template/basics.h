@@ -14,9 +14,10 @@
 
 
 /* adresses */
-#define LSM9DS0_G	0x6B
-#define LSM9DS0_XM	0x1D
-#define LIGHT_SLAVE	0x39
+#define LSM9DS0_G		0x6B
+#define LSM9DS0_XM		0x1D
+#define LIGHT_SLAVE		0x39
+#define LSM303DLM_XM	0x1E
 
 /* GPIOs */
 #define LED_GREEN GPIO_060
@@ -101,6 +102,25 @@ struct Quat {
 	float q3;
 };
 
+struct electricalStruct {
+	int16_t light_raw;
+	bool light_status;
+	bool em_status;
+	bool knife_status;
+};
+
+struct tmStructIMU {
+	float ax,ay,az;
+	float mx,my,mz;
+	float wx,wy,wz;
+	float roll, pitch, heading;
+};
+
+struct tmStructElectrical {
+	bool light, em, knife;
+	int16_t light_value;
+};
+
 /* useful functions */
 
 static inline double degToRad(double deg) {
@@ -156,6 +176,7 @@ static inline char findAxis(struct xyz32 *axis) {
 
 /* Topics with buffers and subscribers */
 
+/*! internal */
 extern Topic<imuData> imu_topic;
 static CommBuffer<imuData> imuBuffer;
 static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
@@ -172,9 +193,18 @@ extern Topic<RPY> gyro_topic;
 static CommBuffer<RPY> gyroBuffer;
 static Subscriber gyroSubscriber(gyro_topic,gyroBuffer, "Gyro Subscriber");
 
-extern Topic<int16_t> light_topic;
-static CommBuffer<int16_t> lightBuffer;
-static Subscriber lightSubscriber(light_topic,lightBuffer, "Light Subscriber");
+extern Topic<electricalStruct> electrical_topic;
+static CommBuffer<electricalStruct> electricalBuffer;
+static Subscriber lightSubscriber(electrical_topic,electricalBuffer, "Electrical Subscriber");
+
+/*! external */
+extern Topic<tmStructIMU> tm_topic_imu;
+static CommBuffer<tmStructIMU> tmIMUBuffer;
+static Subscriber tmIMUSubscriber(tm_topic_imu, tmIMUBuffer, "Telemetry IMU Subscriber");
+
+extern Topic<tmStructElectrical> tm_topic_electrical;
+static CommBuffer<tmStructElectrical> tmElectricalBuffer;
+static Subscriber tmElectricalSubscriber(tm_topic_electrical, tmElectricalBuffer, "Telemetry IMU Subscriber");
 
 extern HAL_UART uart3;
 

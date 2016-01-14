@@ -11,12 +11,9 @@
 #include "hal.h"
 #include "math.h"
 #include "imu.h"
-#include "ahrs.h"
-//#include "motor.h"
-#include "lightsensor.h"
 #include "Electrical.h"
 #include "Telemetry.h"
-//#include "Camera/Camera.h"
+#include "Camera/Camera.h"
 
 namespace RODOS {
 extern HAL_UART uart_stdout;
@@ -28,21 +25,22 @@ extern HAL_UART uart_stdout;
 static Application module01("Template", 2001);
 
 
-Topic<imuData> imu_topic(7,"imu");
-Topic<imuPublish> ahrs_topic(5002,"ahrs");
-Topic<RPY> xm_topic(3,"xm");
-Topic<RPY> gyro_topic(4,"gyro");
-Topic<int16_t> light_topic(5,"light");
+Topic<imuData> imu_topic(5100,"imu");
+Topic<imuPublish> ahrs_topic(5200,"ahrs");
+Topic<RPY> xm_topic(5300,"xm");
+Topic<RPY> gyro_topic(5400,"gyro");
+Topic<electricalStruct> electrical_topic(5500,"light");
+
+Topic<tmStructIMU> tm_topic_imu (5002, "Telemtry");
+Topic<tmStructElectrical> tm_topic_electrical (5003, "Telemtry");
+
 
 /* Uncomment if you want to use something */
 
 IMU imu("imu");
-//AHRS ahrs("ahrs");
-//MOTOR motor("motor");
 Telemetry telemetry("Telemetry");
-lightsensor light("light");
 Electrical electrical("electrical");
-//Camera camera("camera",UART_IDX2);
+Camera camera("camera",UART_IDX2);
 
 
 
@@ -84,7 +82,7 @@ public:
 				case WAITING:
 					if (compare(&current_char,(char*)"$")) {
 						STATE=GET_ID;
-						PRINTF("START ");
+//						PRINTF("START ");
 					} else {
 						PRINTF("ERROR, wrong start-bit! Expected $, got %c! Please try again!\n",current_char);
 					}
@@ -92,7 +90,7 @@ public:
 				case GET_ID:
 					id = atoi(&current_char);
 					STATE=GET_MSG;
-					PRINTF("ID: %d ",id);
+//					PRINTF("ID: %d ",id);
 					break;
 				case GET_MSG:
 					if (bytes < 3) {
@@ -108,7 +106,7 @@ public:
 					if (id == 3 && !got_channel) {
 						channel = atoi(&current_char);
 						got_channel = true;
-						PRINTF("Channel: %d ",channel);
+//						PRINTF("Channel: %d ",channel);
 						if (channel == 4) {
 							STATE=GET_BOOL;
 						}
@@ -120,7 +118,7 @@ public:
 						}
 						if (bytes == 4) {
 							value = atoi(msg);
-							PRINTF("Int: %d ",value);
+//							PRINTF("Int: %d ",value);
 							STATE=GET_STOP;
 							bytes = 0;
 						}
@@ -128,12 +126,12 @@ public:
 					}
 				case GET_BOOL:
 					value = atoi(&current_char);
-					PRINTF("Bool: %d ",value);
+//					PRINTF("Bool: %d ",value);
 					STATE=GET_STOP;
 					break;
 				case GET_STOP:
 					if (compare(&current_char,(char*)"#")) {
-						PRINTF("DONE\n");
+//						PRINTF("DONE\n");
 						STATE=WAITING;
 						processTelecommand(&id, &channel, &value);
 					}
@@ -173,37 +171,48 @@ public:
 			TELECOMMAND=CALCULATE_AHRS;
 		}
 
-		/* ID 3 - PWM */
-		//Set Speed MAIN ENGINE
+		/* ID 3 - Electrical */
+		//Set speed MAIN ENGINE
 		else if (compare(identifier, (char*)"SPA")) {
 			STATE=GET_INT;
-			TELECOMMAND=PWM_SET_SPEED_MAIN;
+			TELECOMMAND=ELECTRICAL_SET_SPEED_MAIN;
 		}
+		//Set speed deployment 1 - B
 		else if (compare(identifier, (char*)"SPB")) {
 			STATE=GET_INT;
-			TELECOMMAND=PWM_SET_SPEED_DEPLOY_B;
+			TELECOMMAND=ELECTRICAL_SET_SPEED_DEPLOY_B;
 		}
+		//Set speed deployment 2 - C
 		else if (compare(identifier, (char*)"SPC")) {
 			STATE=GET_INT;
-			TELECOMMAND=PWM_SET_SPEED_DEPLOY_C;
+			TELECOMMAND=ELECTRICAL_SET_SPEED_DEPLOY_C;
 		}
 		//Steer to
 		else if (compare(identifier, (char*)"STE")) {
 			STATE=GET_INT;
-			TELECOMMAND=PWM_STEER_TO;
+			TELECOMMAND=ELECTRICAL_STEER_TO;
 		}
-		//Activate/Deactivate Knife
+		//Activate/Deactivate knife
 		else if (compare(identifier, (char*) "AKN")) {
 			STATE=GET_BOOL;
-			TELECOMMAND=PWM_ACTIVATE_KNIFE;
+			TELECOMMAND=ELECTRICAL_ACTIVATE_KNIFE;
 		}
-		//Activate/Deactivate Magnet
+		//Activate/Deactivate magnet
 		else if (compare(identifier, (char*) "AMA")) {
 			STATE=GET_BOOL;
-			TELECOMMAND=PWM_ACTIVATE_MAGNET;
+			TELECOMMAND=ELECTRICAL_ACTIVATE_MAGNET;
+		}
+		//Activate/Deactivate lightsensor
+		else if (compare(identifier, (char*) "ALS")) {
+			STATE=GET_BOOL;
+			TELECOMMAND=ELECTRICAL_ACTIVATE_LIGHTSENSOR;
 		}
 
 		/* ID 4 - Camera */
+		else if (compare(identifier, (char*) "PIC")) {
+			STATE=GET_BOOL;
+			TELECOMMAND=TAKE_PICTURE;
+		}
 
 		/* ID 5 - Telemetry */
 		//Activate/deactivate Telemetry
@@ -217,7 +226,7 @@ public:
 			PRINTF("ERROR, wrong syntax! Please try again!\n");
 			STATE=WAITING;
 		}
-		PRINTF("Msg: %3s ",identifier);
+//		PRINTF("Msg: %3s ",identifier);
 	}
 
 	void processTelecommand(int *id, int *channel, int *value) {
@@ -245,29 +254,37 @@ public:
 //					ahrs.yield();
 				}
 				break;
-			case PWM_STEER_TO:
+			case ELECTRICAL_STEER_TO:
 				//TODO write function
 				break;
-			case PWM_SET_SPEED_MAIN:
+			case ELECTRICAL_SET_SPEED_MAIN:
 				electrical.setMainMotorSpeed(value);
 				//motor.setSpeed(channel, value);
 				break;
-			case PWM_SET_SPEED_DEPLOY_B:
+			case ELECTRICAL_SET_SPEED_DEPLOY_B:
 				electrical.setDeployment1Speed(value);
 				//motor.setSpeed(channel, value);
 				break;
-			case PWM_SET_SPEED_DEPLOY_C:
+			case ELECTRICAL_SET_SPEED_DEPLOY_C:
 				electrical.setDeployment2Speed(value);
 				//motor.setSpeed(channel, value);
 				break;
-			case PWM_ACTIVATE_KNIFE:
+			case ELECTRICAL_ACTIVATE_KNIFE:
 				electrical.setKnife(value);
 				break;
-			case PWM_ACTIVATE_MAGNET:
+			case ELECTRICAL_ACTIVATE_MAGNET:
 				electrical.setMagnet(value);
+				break;
+			case ELECTRICAL_ACTIVATE_LIGHTSENSOR:
+				electrical.setLightsensor(value);
 				break;
 			case SET_TELEMETRY:
 				telemetry.setFlag(value);
+				break;
+			case TAKE_PICTURE:
+				if (*value == 1) {
+					camera.turnOn();
+				}
 				break;
 		}
 	}
@@ -296,13 +313,15 @@ private:
 		CALIBRATE_GYR,
 		SET_IMU,
 		CALCULATE_AHRS,
-		PWM_STEER_TO,
-		PWM_SET_SPEED_MAIN,
-		PWM_SET_SPEED_DEPLOY_B,
-		PWM_SET_SPEED_DEPLOY_C,
-		PWM_ACTIVATE_KNIFE,
-		PWM_ACTIVATE_MAGNET,
+		ELECTRICAL_STEER_TO,
+		ELECTRICAL_SET_SPEED_MAIN,
+		ELECTRICAL_SET_SPEED_DEPLOY_B,
+		ELECTRICAL_SET_SPEED_DEPLOY_C,
+		ELECTRICAL_ACTIVATE_KNIFE,
+		ELECTRICAL_ACTIVATE_MAGNET,
+		ELECTRICAL_ACTIVATE_LIGHTSENSOR,
 		SET_TELEMETRY,
+		TAKE_PICTURE,
 	} TELECOMMAND;
 
 

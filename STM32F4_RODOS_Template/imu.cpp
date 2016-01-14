@@ -1,7 +1,8 @@
 #include "IMU.h"
 
 
-/** IMU specific data */
+
+/** IMU specific data LSM9DS0 */
 /* Gyro control registers */
 uint8_t CTRL_REG1_G[2] = {0x20,0b11111111}; // ODR=760Hz (11) + Cutoff=100Hz (11) + Normal Mode (1) + Gyro Axis Enabled (111)
 uint8_t CTRL_REG4_G[2] = {0x23,0b10110000}; // BDU(1) + Data LSb @ lower address (0) + Full-scale = 2000 dps (11) + (0) + Self-test disabled (00) + 4-wire interface SPI (0)
@@ -17,6 +18,15 @@ uint8_t LSM9DS0_OUT_X_L_G[1] = {0x28 | 0x80}; // Gyroscope OUT_X_L address with 
 uint8_t LSM9DS0_OUT_X_L_A[1] = {0x28 | 0x80}; // Accelerometer OUT_X_L address with multiple bytes indicator (0x80)
 uint8_t LSM9DS0_OUT_X_L_M[1] = {0x08 | 0x80}; // Magnetometer OUT_X_L address with multiple bytes indicator (0x80)
 
+/** IMU specific data LSM303DLM_XM */
+/* Magnetometer control registers */
+uint8_t CRA_REG_M[2] = {0x00, 0b00011000};	//75Hz ODR
+uint8_t CRB_REG_M[2] = {0x01, 0b01000000};	//1.9 Gauss
+uint8_t MR_REG_M[2]	= {0x02,0b00000000};	//Continuous-conversion mode
+/* Starting adresses for axes */
+uint8_t LSM303DLM_OUT_X_H_M[1] = {0x03 | 0x80}; // Magnetometer out x high
+
+
 
 HAL_GPIO CS_G(GPIO_018); /* declare HAL_GPIO for GPIO_018 = PB2 (IMU Chip Select pin for the Gyro) */
 HAL_GPIO IMU_EN(GPIO_055); /* declare HAL_GPIO for GPIO_055 = PD7 (IMU Power Enable pin) */
@@ -30,12 +40,12 @@ IMU::IMU(const char* name) : Thread (name) {
 	g_offset.x = -3356.0;
 	g_offset.y = 189.0;
 	g_offset.z = 64.0;
-	m_offset.xMax = 3306;
-	m_offset.xMin = -9577;
-	m_offset.yMax = 7789;
-	m_offset.yMin = -4338;
-	m_offset.zMin = 6998;
-	m_offset.zMax = -4255;
+	m_offset.xMax = 297;
+	m_offset.xMin = -436;
+	m_offset.yMax = 271;
+	m_offset.yMin = -456;
+	m_offset.zMin = 333;
+	m_offset.zMax = -329;
 }
 
 IMU::~IMU() {
@@ -66,10 +76,13 @@ void IMU::initSensors() {
 	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG5_XM, 2);
 	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG6_XM, 2);
 	HAL_I2C_2.write(LSM9DS0_XM, CTRL_REG7_XM, 2);
+
+	HAL_I2C_2.write(LSM303DLM_XM, CRA_REG_M, 2);
+	HAL_I2C_2.write(LSM303DLM_XM, CRB_REG_M, 2);
+	HAL_I2C_2.write(LSM303DLM_XM, MR_REG_M, 2);
 }
 
 void IMU::run() {
-	//suspendCallerUntil();
 	int counter = 0;
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
 		if (calibrate_magnetometer) {
@@ -289,13 +302,14 @@ void IMU::calibrateAcc() {
  */
 void IMU::readMag() {
 	uint8_t data[6] = { };
-	int retVal = HAL_I2C_2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_M, 1, data, 6);
+	int retVal = HAL_I2C_2.writeRead(LSM303DLM_XM, LSM303DLM_OUT_X_H_M, 1, data, 6);
 	if (retVal <= 0)
 		I2CError();
 	else {
-		m_raw.x = (data[1] << 8) | data[0];
-		m_raw.y = (data[3] << 8) | data[2];
-		m_raw.z = (data[5] << 8) | data[4];
+		m_raw.x = (data[0] << 8) | data[1];
+		m_raw.y = (data[4] << 8) | data[5];
+		m_raw.z = (data[2] << 8) | data[3];
+		//PRINTF("%u %u\n",data[0],data[1]);
 	}
 }
 
@@ -388,14 +402,21 @@ void IMU::calculateGyroEuler() {
 
 }
 
+
 void IMU::complementaryFilter() {
 	calculateAccEuler();
 	calculateHeading();
 	calculateGyroEuler();
 	if (!isnan(gyro_euler.pitch) | !isnan(gyro_euler.roll) | !isnan(gyro_euler.heading)) {
+
+		if (gyro_euler.heading - xm_euler.heading > M_PI) xm_euler.heading += 2*M_PI;
+		if (xm_euler.heading - gyro_euler.heading > M_PI) gyro_euler.heading -= 2*M_PI;
 		ahrs_euler.pitch = ((0.1)*xm_euler.pitch) + (0.9*gyro_euler.pitch);
 		ahrs_euler.roll = ((0.1)*xm_euler.roll) + (0.9*gyro_euler.roll);
 		ahrs_euler.heading = ((0.1)*xm_euler.heading) + (0.9*gyro_euler.heading);
+
+		if (ahrs_euler.heading > 2*M_PI) ahrs_euler.heading -=2*M_PI;
+		if (ahrs_euler.heading < 0) ahrs_euler.heading += 2*M_PI;
 
 	}
 }
