@@ -54,7 +54,12 @@ Electrical::~Electrical() {
 }
 
 void Electrical::init() {
+}
 
+void Electrical::run() {
+	HAL_I2C_2.init(400000);
+
+	/* init stuff */
 	PE2.init(true,1,1);
 	HBRIDGE_EN.init(true, 1, 1);
 
@@ -74,11 +79,9 @@ void Electrical::init() {
 	HBRIDGE_C_INA.init(true, 1, 1);
 	HBRIDGE_C_INB.init(true, 1, 0);
 
-	HAL_I2C_2.init(400000);
 	HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
-}
 
-void Electrical::run() {
+	/* important stuff */
 	int16_t channel_0, channel_1;
 	electricalStruct values;
 	while (1) {

@@ -40,7 +40,7 @@ Topic<tmStructElectrical> tm_topic_electrical (5003, "Telemtry");
 IMU imu("imu");
 Telemetry telemetry("Telemetry");
 Electrical electrical("electrical");
-Camera camera("camera",UART_IDX2);
+Camera camera("camera",Teleuart);
 
 
 
@@ -82,9 +82,8 @@ public:
 				case WAITING:
 					if (compare(&current_char,(char*)"$")) {
 						STATE=GET_ID;
-//						PRINTF("START ");
 					} else {
-						PRINTF("ERROR, wrong start-bit! Expected $, got %c! Please try again!\n",current_char);
+//						PRINTF("ERROR, wrong start-bit! Expected $, got %c! Please try again!\n",current_char);
 					}
 					break;
 				case GET_ID:
@@ -322,6 +321,7 @@ private:
 		ELECTRICAL_ACTIVATE_LIGHTSENSOR,
 		SET_TELEMETRY,
 		TAKE_PICTURE,
+		ACTIVATE_CAMERA,
 	} TELECOMMAND;
 
 

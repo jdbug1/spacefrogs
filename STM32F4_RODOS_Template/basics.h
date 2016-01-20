@@ -31,7 +31,7 @@
 #define MAG_SENSITIVITY		0.08	// [mgauss/LSB]
 #define CALIBRATION_VALUES	1024	// for sensor calibration
 #define MEAN_FILTER_SAMPLES	4		// simple low pass filter
-#define IMU_SAMPLING_RATE	2		// [ms]
+#define IMU_SAMPLING_RATE	5		// [ms]
 
 /* important AHRS values */
 #define AHRS_SAMPLING_RATE	10		// [ms]

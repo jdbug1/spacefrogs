@@ -40,12 +40,22 @@ IMU::IMU(const char* name) : Thread (name) {
 	g_offset.x = -3356.0;
 	g_offset.y = 189.0;
 	g_offset.z = 64.0;
-	m_offset.xMax = 297;
-	m_offset.xMin = -436;
+	/* internal IMU */
+/*	m_offset.xMax = 9242;
+	m_offset.xMin = -2556;
 	m_offset.yMax = 271;
+	m_offset.yMin = -12552;
+	m_offset.zMin = 5986;
+	m_offset.zMax = -4831;
+*/	/* external IMU */
+	m_offset.xMax = 300;
+	m_offset.xMin = -436;
+	m_offset.yMax = 467;
 	m_offset.yMin = -456;
-	m_offset.zMin = 333;
-	m_offset.zMax = -329;
+	m_offset.zMin = 187;
+	m_offset.zMax = -495;
+
+
 }
 
 IMU::~IMU() {
@@ -83,7 +93,6 @@ void IMU::initSensors() {
 }
 
 void IMU::run() {
-	int counter = 0;
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
 		if (calibrate_magnetometer) {
 			calibrateMag();
@@ -96,16 +105,12 @@ void IMU::run() {
 			calculateMag();
 			calculateAcc();
 			imu_topic.publish(imu_data);
-			counter++;
-			if (counter == MEAN_FILTER_SAMPLES) {
-				complementaryFilter();
-				publish.heading = ahrs_euler.heading;
-				publish.roll = ahrs_euler.roll;
-				publish.pitch = ahrs_euler.pitch;
-				publish.wx = imu_data.wx;
-				ahrs_topic.publish(publish);
-				counter = 0;
-			}
+			complementaryFilter();
+			publish.heading = ahrs_euler.heading;
+			publish.roll = ahrs_euler.roll;
+			publish.pitch = ahrs_euler.pitch;
+			publish.wx = imu_data.wx;
+			ahrs_topic.publish(publish);
 		}
 	}
 }
@@ -133,26 +138,16 @@ void IMU::readGyro() {
 		g_raw.x = (int16_t)((data[1] << 8) | data[0]);
 		g_raw.y = (int16_t)((data[3] << 8) | data[2]);
 		g_raw.z = (int16_t)((data[5] << 8) | data[4]);
+//		PRINTF("Gyro %d %d %d\n",g_raw.x,g_raw.y,g_raw.z);
 	}
 }
 
 /* calculate angular rate [rad/s] */
 void IMU::calculateGyro() {
 	readGyro();
-	if (g_counter < MEAN_FILTER_SAMPLES) {
-		g_counter++;
-		g_temp.x += g_raw.x;
-		g_temp.y += g_raw.y;
-		g_temp.z += g_raw.z;
-	}
-	if (g_counter == MEAN_FILTER_SAMPLES) {
-		imu_data.wx = degToRad(((g_temp.x/(float)MEAN_FILTER_SAMPLES)-g_offset.x)*GYRO_SENSITIVITY);
-		imu_data.wy = degToRad(((g_temp.y/(float)MEAN_FILTER_SAMPLES)-g_offset.y)*GYRO_SENSITIVITY);
-		imu_data.wz = degToRad(((g_temp.z/(float)MEAN_FILTER_SAMPLES)-g_offset.z)*GYRO_SENSITIVITY);
-		g_counter = 0;
-		g_temp.x = g_temp.y = g_temp.z = 0;
-
-	}
+	imu_data.wx = degToRad((((float)g_raw.x)-g_offset.x)*GYRO_SENSITIVITY);
+	imu_data.wy = degToRad((((float)g_raw.y)-g_offset.y)*GYRO_SENSITIVITY);
+	imu_data.wz = degToRad((((float)g_raw.z)-g_offset.z)*GYRO_SENSITIVITY);
 }
 
 void IMU::calibrateGyro() {
@@ -210,20 +205,9 @@ void IMU::readAcc() {
 /* calculate linear velocity [mg] */
 void IMU::calculateAcc() {
 	readAcc();
-	if (a_counter < MEAN_FILTER_SAMPLES) {
-		a_counter++;
-		a_temp.x += a_raw.x;
-		a_temp.y += a_raw.y;
-		a_temp.z += a_raw.z;
-	}
-	if (a_counter == MEAN_FILTER_SAMPLES) {
-		imu_data.ax = (((float)a_temp.x/MEAN_FILTER_SAMPLES)-a_offset.x)*ACC_SENSITIVITY;
-		imu_data.ay = (((float)a_temp.y/MEAN_FILTER_SAMPLES)-a_offset.y)*ACC_SENSITIVITY;
-		imu_data.az = (((float)a_temp.z/MEAN_FILTER_SAMPLES)-a_offset.z)*ACC_SENSITIVITY;
-		a_counter = 0;
-		a_temp.x = a_temp.y = a_temp.z = 0;
-
-	}
+	imu_data.ax = (((float)a_raw.x)-a_offset.x)*ACC_SENSITIVITY;
+	imu_data.ay = (((float)a_raw.y)-a_offset.y)*ACC_SENSITIVITY;
+	imu_data.az = (((float)a_raw.z)-a_offset.z)*ACC_SENSITIVITY;
 }
 
 void IMU::calibrateAcc() {
@@ -302,33 +286,33 @@ void IMU::calibrateAcc() {
  */
 void IMU::readMag() {
 	uint8_t data[6] = { };
+	/* internal Magnetometer */
+//	int retVal = HAL_I2C_2.writeRead(LSM9DS0_XM, LSM9DS0_OUT_X_L_M, 1, data, 6);
+	/* external Magnetometer */
 	int retVal = HAL_I2C_2.writeRead(LSM303DLM_XM, LSM303DLM_OUT_X_H_M, 1, data, 6);
 	if (retVal <= 0)
 		I2CError();
 	else {
+		/* internal Magnetometer */
+/* 		m_raw.x = (data[1] << 8) | data[0];
+ 		m_raw.y = (data[3] << 8) | data[2];
+ 		m_raw.z = (data[5] << 8) | data[4];
+*/ 		/* external Magnetometer */
 		m_raw.x = (data[0] << 8) | data[1];
-		m_raw.y = (data[4] << 8) | data[5];
-		m_raw.z = (data[2] << 8) | data[3];
+		m_raw.y = (data[2] << 8) | data[3];
+		m_raw.z = (data[4] << 8) | data[5];
+
+
 		//PRINTF("%u %u\n",data[0],data[1]);
 	}
 }
 
 /* calculate and normalize magnetometer data */
 void IMU::calculateMag() {
-	if (m_counter < MEAN_FILTER_SAMPLES) {
-		m_counter++;
-		readMag();
-		m_temp.x += m_raw.x;
-		m_temp.y += m_raw.y;
-		m_temp.z += m_raw.z;
-	}
-	if (m_counter == MEAN_FILTER_SAMPLES) {
-		imu_data.mx = ((((float)m_temp.x/MEAN_FILTER_SAMPLES)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
-		imu_data.my = ((((float)m_temp.y/MEAN_FILTER_SAMPLES)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
-		imu_data.mz = ((((float)m_temp.z/MEAN_FILTER_SAMPLES)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
-		m_counter = 0;
-		m_temp.x = m_temp.y = m_temp.z = 0;
-	}
+	readMag();
+	imu_data.mx = ((((float)m_raw.x)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
+	imu_data.my = ((((float)m_raw.y)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
+	imu_data.mz = ((((float)m_raw.z)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
 }
 
 void IMU::calibrateMag() {
@@ -336,6 +320,9 @@ void IMU::calibrateMag() {
 	imu_topic.publish(imu_data);
 	bool buttonPressed = false;
 	PRINTF("Calibrating Magnetometer! Move around every axis!\nPress UserButton, if finished!\n");
+	m_offset.xMin = m_offset.xMax = 0;
+	m_offset.yMin = m_offset.yMax = 0;
+	m_offset.zMin = m_offset.zMax = 0;
 	while (!buttonPressed) {
 		buttonPressed = USERBUTTON.isDataReady();
 		readMag();
@@ -397,9 +384,7 @@ void IMU::calculateGyroEuler() {
 		gyro_euler.pitch = ahrs_euler.pitch + 	(((cr*cp*imu_data.wy - sr*cp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
 		gyro_euler.roll = ahrs_euler.roll + 	(((cp*imu_data.wx + sr*sp*imu_data.wy + cr*sp*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
 		gyro_euler.heading = ahrs_euler.heading + (((sr*imu_data.wy + cr*imu_data.wz)/cp)*AHRS_SAMPLING_RATE/1000.0);
-
 	}
-
 }
 
 
@@ -411,9 +396,9 @@ void IMU::complementaryFilter() {
 
 		if (gyro_euler.heading - xm_euler.heading > M_PI) xm_euler.heading += 2*M_PI;
 		if (xm_euler.heading - gyro_euler.heading > M_PI) gyro_euler.heading -= 2*M_PI;
-		ahrs_euler.pitch = ((0.1)*xm_euler.pitch) + (0.9*gyro_euler.pitch);
-		ahrs_euler.roll = ((0.1)*xm_euler.roll) + (0.9*gyro_euler.roll);
-		ahrs_euler.heading = ((0.1)*xm_euler.heading) + (0.9*gyro_euler.heading);
+		ahrs_euler.pitch = ((1-ALPHA)*xm_euler.pitch) + (ALPHA*gyro_euler.pitch);
+		ahrs_euler.roll = ((1-ALPHA)*xm_euler.roll) + (ALPHA*gyro_euler.roll);
+		ahrs_euler.heading = ((1-ALPHA)*xm_euler.heading) + (ALPHA*gyro_euler.heading);
 
 		if (ahrs_euler.heading > 2*M_PI) ahrs_euler.heading -=2*M_PI;
 		if (ahrs_euler.heading < 0) ahrs_euler.heading += 2*M_PI;
