@@ -65,9 +65,9 @@ public:
 			  tm_electrical.knife = electrical.knife_status;
 			  tm_electrical.em = electrical.em_status;
 			  tm_electrical.light = electrical.light_status;
-			  tm_electrical.light_value = electrical.light_raw;
+			  tm_electrical.light_value = electrical.light;
 
-			  topicCounter1.publish(cnt);
+//			  topicCounter1.publish(cnt);
 			  tm_topic_imu.publish(tm_imu);
 			  tm_topic_electrical.publish(tm_electrical);
 

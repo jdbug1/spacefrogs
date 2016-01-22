@@ -51,6 +51,7 @@ HAL_GPIO OrangeLED(LED_ORANGE);
 
 
 HAL_I2C HAL_I2C_2(I2C_IDX2);
+HAL_I2C HAL_I2C_1(I2C_IDX1);
 
 
 /***********************************************************************/

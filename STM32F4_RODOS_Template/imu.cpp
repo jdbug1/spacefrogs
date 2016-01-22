@@ -1,7 +1,6 @@
 #include "IMU.h"
 
 
-
 /** IMU specific data LSM9DS0 */
 /* Gyro control registers */
 uint8_t CTRL_REG1_G[2] = {0x20,0b11111111}; // ODR=760Hz (11) + Cutoff=100Hz (11) + Normal Mode (1) + Gyro Axis Enabled (111)
@@ -31,6 +30,18 @@ uint8_t LSM303DLM_OUT_X_H_M[1] = {0x03 | 0x80}; // Magnetometer out x high
 HAL_GPIO CS_G(GPIO_018); /* declare HAL_GPIO for GPIO_018 = PB2 (IMU Chip Select pin for the Gyro) */
 HAL_GPIO IMU_EN(GPIO_055); /* declare HAL_GPIO for GPIO_055 = PD7 (IMU Power Enable pin) */
 HAL_GPIO USERBUTTON(GPIO_000); //UserButton
+
+/*
+ * The rotation matrix from the matlab script
+ */
+float el_ma[3][3] = {{	  3.9419,   -0.0282,   -0.8055},
+                     {	 -0.0282,    3.5682,    0.1643},
+                     {	 -0.8055,    0.1643,    5.2197}};
+
+/*
+ * The scale factors from the matlab script
+ */
+float el_sc[3] = {-157.3306,   -0.3943,   72.4050};
 
 
 IMU::IMU(const char* name) : Thread (name) {
@@ -93,7 +104,11 @@ void IMU::initSensors() {
 }
 
 void IMU::run() {
+	int64_t t1,t2;
+	int counter = 0;
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
+//		counter++;
+//		t1 = NOW();
 		if (calibrate_magnetometer) {
 			calibrateMag();
 		} else if (calibrate_gyroscope) {
@@ -112,6 +127,12 @@ void IMU::run() {
 			publish.wx = imu_data.wx;
 			ahrs_topic.publish(publish);
 		}
+
+//		t2 = NOW();
+//		if (counter >= 50) {
+//			PRINTF("Time was %1.2f ms\n",(float)(t2-t1)/1000000.0);
+//			counter = 0;
+//		}
 	}
 }
 
@@ -310,10 +331,19 @@ void IMU::readMag() {
 /* calculate and normalize magnetometer data */
 void IMU::calculateMag() {
 	readMag();
-	imu_data.mx = ((((float)m_raw.x)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
+	float mv[3];
+	/* soft iron calibration */
+	mv[0] = m_raw.x - el_sc[0];
+	mv[1] = m_raw.y - el_sc[1];
+	mv[2] = m_raw.z - el_sc[2];
+	imu_data.mx = el_ma[0][0] * mv[0] + el_ma[0][1] * mv[1] + el_ma[0][2] * mv[2];
+	imu_data.my = el_ma[1][0] * mv[0] + el_ma[1][1] * mv[1] + el_ma[1][2] * mv[2];
+	imu_data.mz = el_ma[2][0] * mv[0] + el_ma[2][1] * mv[1] + el_ma[2][2] * mv[2];
+	/* hard iron calibration */
+/*	imu_data.mx = ((((float)m_raw.x)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
 	imu_data.my = ((((float)m_raw.y)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
 	imu_data.mz = ((((float)m_raw.z)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
-}
+*/}
 
 void IMU::calibrateMag() {
 	imu_data.calibrating = true;
@@ -402,7 +432,6 @@ void IMU::complementaryFilter() {
 
 		if (ahrs_euler.heading > 2*M_PI) ahrs_euler.heading -=2*M_PI;
 		if (ahrs_euler.heading < 0) ahrs_euler.heading += 2*M_PI;
-
 	}
 }
 

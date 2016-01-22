@@ -38,7 +38,9 @@
 #define ALPHA 0.9					// gain of complementary filter
 
 /* I2Cs */
+extern HAL_I2C HAL_I2C_1;
 extern HAL_I2C HAL_I2C_2;
+
 
 /* important structs */
 
@@ -103,10 +105,12 @@ struct Quat {
 };
 
 struct electricalStruct {
-	int16_t light_raw;
+	float light;
 	bool light_status;
 	bool em_status;
 	bool knife_status;
+	float battery_voltage;
+	float bus_current;
 };
 
 struct tmStructIMU {

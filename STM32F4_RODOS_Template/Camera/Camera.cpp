@@ -106,14 +106,15 @@ void Camera::run() {
 	int counter = 0;
 	while (1) {
 		if (sendPic) {
-			for (int i = 1; i < IMAGESIZE + 1; i += 2) {
-				counter++;
-				PRINTF("%03u ", DCMI_Buffer[i - 1]);
-				if (counter == WIDTH) {
-					PRINTF("\n");
-					counter = 0;
-				}
+			for (int i = 0; i < IMAGESIZE; i++) {
+//				counter++;
+				PRINTF("%03u", DCMI_Buffer[i]);
+//				if (counter == WIDTH) {
+//					PRINTF("\n");
+//					counter = 0;
+//				}
 			}
+			xprintf("FRAME STOP\n");
 			sendPic = false;
 			active = false;
 		}
@@ -175,7 +176,7 @@ void Camera::delayx(unsigned int ms) {
 void Camera::turnOn(void){
 	this->active = true;
 	//ledo.setPins(1);
-	xprintf("Cam active\n");
+//	xprintf("Cam active\n");
 	Capture();
 }
 void Camera::turnOff(void){

@@ -8,7 +8,7 @@
 #include "Telemetry.h"
 
 Telemetry::Telemetry(const char* name) : Thread(name) {
-	timer = 250*MILLISECONDS;
+	timer = 0;
 }
 
 Telemetry::~Telemetry() {
@@ -36,14 +36,14 @@ void Telemetry::run() {
 			electricalBuffer.get(lightValues);
 			if (!imu.calibrating) {
 /*				PRINTF("Acc %5.2f %5.2f %5.2f\n", imu.ax, imu.ay, imu.az);
-*/				PRINTF("Mag %5.2f %5.2f %5.2f\n", imu.mx, imu.my, imu.mz);
+				PRINTF("Mag %5.2f %5.2f %5.2f\n", imu.mx, imu.my, imu.mz);
 /*				PRINTF("Gyr %5.2f %5.2f %5.2f\n", radToDeg(imu.wx), radToDeg(imu.wy), radToDeg(imu.wz));
 				PRINTF("XM  %5.2f %5.2f %5.2f\n",radToDeg(xm.roll),radToDeg(xm.pitch),radToDeg(xm.heading));
 				PRINTF("Gyr %5.2f %5.2f %5.2f\n",radToDeg(gyro.roll),radToDeg(gyro.pitch),radToDeg(gyro.heading));
-*/				PRINTF("Com %5.2f %5.2f %5.2f\n", radToDeg(ahrs.roll), radToDeg(ahrs.pitch), radToDeg(ahrs.heading));
-			}
+				PRINTF("Com %5.2f %5.2f %5.2f\n", radToDeg(ahrs.roll), radToDeg(ahrs.pitch), radToDeg(ahrs.heading));
+*/			}
 			if (lightValues.light_status) {
-				PRINTF("Lightsensor: %05d\n",lightValues.light_raw);
+				PRINTF("Lightsensor: %05f\n",lightValues.light);
 			}
 		}
 	}

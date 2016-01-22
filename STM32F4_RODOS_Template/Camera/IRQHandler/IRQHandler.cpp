@@ -31,7 +31,7 @@ extern "C" void DMA2_Stream1_IRQHandler(void) {
 	static int K;
 	//Test on DMA2 Channel1 Transfer Complete interrupt
 	if (DMA_GetITStatus(DMA2_Stream1, DMA_IT_TCIF1) == SET) {
-		xprintf("Frame Complete, detecting Target...\n");
+//		xprintf("Frame Complete, detecting Target...\n");
 		//camera.ProcessData();
 		DMA_ClearFlag(DMA2_Stream1, DMA_IT_TCIF1);
 	}
@@ -73,7 +73,7 @@ extern "C" void DCMI_IRQHandler(void) {
 		DCMI_ClearFlag(DCMI_IT_LINE);
 	}
 	else if(DCMI_GetITStatus(DCMI_IT_FRAME) == SET){
-		xprintf("FRAME\n");
+		xprintf("FRAME START");
 		camera.sendPicture(true);
 
 		DCMI_ClearFlag(DCMI_IT_FRAME);
