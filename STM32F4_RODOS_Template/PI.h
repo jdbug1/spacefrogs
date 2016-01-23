@@ -8,12 +8,15 @@
 #ifndef PI_H_
 #define PI_H_
 
-#define P2_closed 	20
-#define I2_closed 	0.2
+#define P2_closed 	-40.2426953452767
+#define I2_closed 	-371.710687698176
+#define wl_closed	12
 #define P2_deployed 20
 #define I2_deployed 0.2
+#define wl_deployed 7
 #define P2_extended 20
 #define I2_extended 0.2
+#define wl_extended 7
 
 #define closed 		0
 #define deployed 	1
@@ -27,11 +30,11 @@
 #include "basics.h"
 #include "Electrical.h"
 
-class PI : public Thread {
+class PI {
 private:
 	float i_temp, PWM_temp, ref_Vel, state;
 	imuPublish imu;
-	Electrical* electrical;
+	Electrical* El;
 	void Change_Duty_Cycle();
 	/*Sends a calculated value to the electrical element main motor*/
 
@@ -40,12 +43,6 @@ private:
 public:
 	PI(const char* name, Electrical* El);
 	virtual ~PI();
-
-	void init();
-	/*Sets the variables to initial values*/
-
-	void run();
-	/*Checks the reference velocity and tries to achieve it*/
 
 	void set_Velocity(float ref_vel);
 	/*Sets the value of ref_Vel*/

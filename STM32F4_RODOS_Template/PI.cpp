@@ -50,37 +50,25 @@
 		}
 		int DC = int(Duty_Cycle);
 
-		electrical->setMainMotorSpeed(&DC);
+		El->setMainMotorSpeed(&DC);
 	}
 
 	float PI::get_Velocity() {
 		ahrsBuffer.get(imu);
-		float heading = imu.heading;
+		float velocity = imu.wx;
 		// Some filtering code
-		return heading;
+		return velocity;
 	}
 
 	PI::PI(const char* name, Electrical* El){
 		i_temp = 0;
 		PWM_temp = 0;
 		ref_Vel = 0;
-		electrical = El;
+		this->El = El;
 	}
 
 	PI::~PI() {
 
-	}
-
-	void PI::init() {
-
-	}
-	void PI::run() {
-		uint16_t t1, t2;
-		t1 = NOW();
-		Change_Duty_Cycle();
-
-		t2 = NOW();
-	    suspendCallerUntil(NOW() + Ts2 - (t2-t1));
 	}
 
 	void PI::set_Velocity(float ref_vel){

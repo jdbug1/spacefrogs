@@ -14,35 +14,56 @@
 		float P_term;
 		float I_term;
 		float D_term;
+		float speed_lim;
 		float new_angle;
-		float Duty_Cycle;
+		float ref_speed;
+		float P, I, D, N;
 
 		new_angle = get_Angle();
 		e = ref_Ang - new_angle;
 
-		P_term = P1*e;
+		if (pi->state == closed){
+			P = P1_closed;
+			I = I1_closed;
+			D = D1_closed;
+			N = N_closed;
+			speed_lim = wl_closed;
+		} else if (pi->state == deployed){
+			P = P1_deployed;
+			I = I1_deployed;
+			D = D1_deployed;
+			N = N_deployed;
+			speed_lim = wl_deployed;
+		} else if (pi->state == extended){
+			P = P1_extended;
+			I = I1_extended;
+			D = D1_extended;
+			N = N_extended;
+			speed_lim = wl_extended;
+		}
 
-		i_temp += e;
+		P_term = P*e;
+
+		i_temp += e*Ts2;
 		if (i_temp < iMin){
 			i_temp = iMin;
 		} else if (i_temp > iMax){
 			i_temp = iMax;
 		}
-		I_term = I1*i_temp;
+		I_term = I*i_temp;
 
-		D_term = D1*(d_temp - e);
+		D_term = D*(d_temp - e)/Ts2; // I need to add N here in some way?????
 		d_temp = e;
 
-		Duty_Cycle = PWM_temp - (P_term + I_term + D_term);
+		ref_speed = P_term + I_term + D_term;
 
-		if (Duty_Cycle < -100){
-			Duty_Cycle = -100;
-		} else if (Duty_Cycle > 100){
-			Duty_Cycle = 100;
+		if (ref_speed < -speed_lim){
+			ref_speed = -speed_lim;
+		} else if (ref_speed > speed_lim){
+			ref_speed = speed_lim;
 		}
-		int DC = int(Duty_Cycle);
 
-		//electrical->setMainMotorSpeed(&DC);
+		pi->set_Velocity(ref_speed);
 	}
 
 	float PID::get_Angle() {
@@ -63,15 +84,3 @@
 	PID::~PID() {
 
 	}
-
-	void PID::init() {
-
-	}
-	void PID::run() {
-		uint16_t t1, t2;
-		t1 = NOW();
-
-		t2 = NOW();
-	    suspendCallerUntil(NOW() + Ts1 - (t2-t1));
-	}
-
