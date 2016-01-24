@@ -1,3 +1,11 @@
+/*
+ * Currentsensor.h
+ *
+ *  @modified by	Sven Jörissen
+ *  @date			21.01.2016
+ *
+ */
+
 #include "rodos.h"
 #include "basics.h"
 

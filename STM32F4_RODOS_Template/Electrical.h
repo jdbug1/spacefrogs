@@ -25,7 +25,6 @@
 class Electrical : public Thread {
 public:
 	Electrical(const char* name);
-	virtual ~Electrical();
 
 	void init();
 	void run();

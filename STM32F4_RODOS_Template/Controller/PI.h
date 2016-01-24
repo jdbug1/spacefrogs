@@ -27,16 +27,14 @@
 
 #include "rodos.h"
 #include "hal.h"
-#include "basics.h"
-#include "Electrical.h"
+#include "../basics.h"
+#include "../Electrical.h"
 
 class PI {
 private:
 	float i_temp, PWM_temp, ref_Vel, state;
-	imuPublish imu;
+	ahrsPublish imu;
 	Electrical* El;
-	void Change_Duty_Cycle();
-	/*Sends a calculated value to the electrical element main motor*/
 
 	float get_Velocity();
 
@@ -48,6 +46,11 @@ public:
 	/*Sets the value of ref_Vel*/
 
 	void set_State(int i);
+
+	float get_State();
+
+	void Change_Duty_Cycle();
+	/*Sends a calculated value to the electrical element main motor*/
 
 };
 

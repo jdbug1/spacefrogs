@@ -1,8 +1,10 @@
 /*
  * Template.cpp
  *
- * Created on: 25.06.2014
- * Author: Atheel Redah
+ *  Contains telecommand class and mission class
+ *
+ *  @author	Sven Jörissen
+ *  @date	24.01.2016
  *
  */
 
@@ -22,40 +24,73 @@ extern HAL_UART uart_stdout;
 #define Teleuart uart_stdout
 
 
-static Application module01("Template", 2001);
+static Application debris_snapper("Spacefrogs", 2001);
 
-
+/* topics for internal communication and data exchange */
 Topic<imuData> imu_topic(5100,"imu");
-Topic<imuPublish> ahrs_topic(5200,"ahrs");
+Topic<ahrsPublish> ahrs_topic(5200,"ahrs");
 Topic<RPY> xm_topic(5300,"xm");
 Topic<RPY> gyro_topic(5400,"gyro");
 Topic<electricalStruct> electrical_topic(5500,"light");
 
-Topic<tmStructIMU> tm_topic_imu (5002, "Telemtry");
-Topic<tmStructElectrical> tm_topic_electrical (5003, "Telemtry");
+/* topics for telemetry */
+Topic<tmStructIMU> tm_topic_imu (5002, "imu data for telemetry");
+Topic<tmStructElectrical> tm_topic_electrical (5003, "electrical data for telemetry");
 
-
-/* Uncomment if you want to use something */
-
+/* Create all external Threads here */
 IMU imu("imu");
 Telemetry telemetry("Telemetry");
 Electrical electrical("electrical");
 Camera camera("camera",Teleuart);
 
-
-
+/* LEDs for fun */
 HAL_GPIO GreenLED(LED_GREEN);
 HAL_GPIO RedLED(LED_RED);
 HAL_GPIO BlueLED(LED_BLUE);
 HAL_GPIO OrangeLED(LED_ORANGE);
 
-
+/* declare I2Cs */
 HAL_I2C HAL_I2C_2(I2C_IDX2);
 HAL_I2C HAL_I2C_1(I2C_IDX1);
 
 
 /***********************************************************************/
 
+/**
+ * Complete mission procedure is implemented in this class
+ */
+class Mission : public Thread {
+public:
+	Mission(const char* name) : Thread(name) {
+
+	}
+	void init() {
+
+	}
+	void run() {
+
+	}
+
+private:
+	enum mission_states {
+		START,
+		CALIBRATE,
+		FIND_SUN,
+		DEPLOY_PANELS,
+		SEND_PICTURE,
+		FIND_DEBRIS,
+		TRANSPORT_DEBRIS,
+		END_MISSION,
+	};
+};
+
+
+/***********************************************************************/
+
+/**
+ * Telecommand class needs to know all other threads
+ * TODO put in seperate file and use pointer!
+ */
 class Telecommand : public Thread {
 
 public:
@@ -67,6 +102,10 @@ public:
 
 	}
 
+	/*
+	 * run functions implements state machine for telecommand processing
+	 * TODO remove whatever this channel thing does...
+	 */
 	void run() {
 		int id;
 		char msg[3];
@@ -133,7 +172,7 @@ public:
 					if (compare(&current_char,(char*)"#")) {
 //						PRINTF("DONE\n");
 						STATE=WAITING;
-						processTelecommand(&id, &channel, &value);
+						processTelecommand(&value);
 					}
 					break;
 			}
@@ -141,6 +180,9 @@ public:
 		}
 	}
 
+	/*
+	 * checks transmitted identifier
+	 */
 	void checkIdentifier(char* identifier) {
 		/* ID 1 - IMU */
 		//Calibrate Magnetometer
@@ -229,7 +271,10 @@ public:
 //		PRINTF("Msg: %3s ",identifier);
 	}
 
-	void processTelecommand(int *id, int *channel, int *value) {
+	/*
+	 * calls functions and does stuff according to received telecommand
+	 */
+	void processTelecommand(int *value) {
 		switch (TELECOMMAND) {
 			case CALIBRATE_MAG:
 				imu.setCalibrateMagnetometer();

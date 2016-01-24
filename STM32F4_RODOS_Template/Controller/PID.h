@@ -26,22 +26,23 @@
 
 #include "rodos.h"
 #include "hal.h"
-#include "basics.h"
+#include "../basics.h"
 #include "PI.h"
 
 class PID {
 private:
 	float i_temp, d_temp, PWM_temp, ref_Ang;
-	imuPublish imu;
+	ahrsPublish imu;
 	PI* pi;
-	void Change_Ref_Vel();
-	/*Calculates a reference velocity and sets it in the PI controller*/
 
 	float get_Angle();
 
 public:
 	PID(const char* name, PI* pi);
 	virtual ~PID();
+
+	void Change_Ref_Vel();
+	/*Calculates a reference velocity and sets it in the PI controller*/
 };
 
 #endif /* PID_H_ */

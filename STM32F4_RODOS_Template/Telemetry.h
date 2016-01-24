@@ -1,8 +1,8 @@
 /*
  * Telemetry.h
  *
- *  Created on: 13.12.2015
- *      Author: JackVEnterprises
+ *  @author	Sven Jörissen
+ *  @date	13.12.2015
  */
 
 #ifndef TELEMETRY_H_

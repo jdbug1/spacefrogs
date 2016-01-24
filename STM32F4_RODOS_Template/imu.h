@@ -1,3 +1,10 @@
+/*
+ * imu.h
+ *
+ *  @author	Sven Jörissen
+ *  @date	09.11.2015
+ */
+
 #ifndef IMU_H_
 #define IMU_H_
 
@@ -46,7 +53,7 @@ private:
 	imuData imu_data;
 	xyzFloat g_offset;
 	RPY xm_euler, gyro_euler, ahrs_euler;
-	imuPublish publish;
+	ahrsPublish publish;
 	bool calibrate_magnetometer, calibrate_gyroscope, calibrate_accelerometer;
 };
 

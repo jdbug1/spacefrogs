@@ -75,3 +75,7 @@
 		ref_vel = ref_Vel;
 	}
 
+	float PI::get_State() {
+		return this->state;
+	}
+

@@ -1,6 +1,15 @@
-#include "Currentsensor.h"
+/*
+ * Currentsensor.cpp
+ *
+ * 	Library for INA219 currentsensor (originally for Arduino)
+ *  @modified by	Sven Jörissen
+ *  @date			21.01.2016
+ *
+ */
 
+#include "Currentsensor.h"
 #include "rodos.h"
+
 
 /**************************************************************************/
 /*! 

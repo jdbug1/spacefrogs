@@ -1,8 +1,9 @@
 /*
  * basics.h
  *
- *  Created on: 21.11.2015
- *      Author: JackVEnterprises
+ *  @author	Sven Jörissen
+ *  @date	21.11.2015
+ *
  */
 
 #ifndef BASICS_H_
@@ -26,21 +27,24 @@
 #define LED_BLUE GPIO_063
 
 /* important IMU values */
-#define ACC_SENSITIVITY		0.061	// [mg/LSB]
-#define GYRO_SENSITIVITY	0.07	// [dps/digit]
-#define MAG_SENSITIVITY		0.08	// [mgauss/LSB]
-#define CALIBRATION_VALUES	1024	// for sensor calibration
-#define MEAN_FILTER_SAMPLES	4		// simple low pass filter
-#define IMU_SAMPLING_RATE	5		// [ms]
+#define ACC_SENSITIVITY_2		0.061	// [mg/LSB]
+#define GYRO_SENSITIVITY_2000	0.07	// [dps/digit]
+#define GYRO_SENSITIVITY_500	0.0175	// [dps/digit]
+#define GYRO_SENSITIVITY_245	0.00875	// [dps/digit]
+#define CALIBRATION_VALUES		1024	// for sensor calibration
+#define MEAN_FILTER_SAMPLES		4		// simple low pass filter
 
 /* important AHRS values */
-#define AHRS_SAMPLING_RATE	10		// [ms]
 #define ALPHA 0.9					// gain of complementary filter
 
 /* I2Cs */
 extern HAL_I2C HAL_I2C_1;
 extern HAL_I2C HAL_I2C_2;
 
+/* Sampling rates for all threads in [ms] */
+#define IMU_SAMPLING_RATE			2
+#define ELECTRICAL_SAMPLING_RATE	100
+#define TELEMETRY_SAMPLING_RATE		250
 
 /* important structs */
 
@@ -81,11 +85,13 @@ struct imuData {
 		bool calibrating;
 };
 
-struct imuPublish {
+struct ahrsPublish {
 	float wx;
 	float roll;
 	float pitch;
 	float heading;
+	float xm_heading;
+	float gyro_heading;
 };
 
 struct magMaxMin {
@@ -135,6 +141,11 @@ static inline double radToDeg(double rad) {
 	return rad*180.0/M_PI;
 }
 
+/*
+ * Compares two char pointers
+ * @param	*cx pointer to char x
+ * @return	0 if not equal, 1 if equal
+ */
 static inline char compare(char *c1, char *c2) {
 	int i;
 	for (i = 0; i < strlen(c2); i++ ) {
@@ -145,6 +156,10 @@ static inline char compare(char *c1, char *c2) {
 	return 1;
 }
 
+/*
+ * Looks for maximum in struct xyz32
+ * @return	max element of given struct
+ */
 static inline double myMax(struct xyz32 temp) {
 	int t;
 
@@ -163,6 +178,11 @@ static inline double myMax(struct xyz32 temp) {
 	return 0;
 }
 
+/*
+ * Used for calibration of accelerometer
+ * @param	xyz32 *axis	pointer to xyz32 struct
+ * @return	char for axis with highes values, 0 if error
+ */
 static inline char findAxis(struct xyz32 *axis) {
 	xyz32 temp;
 	double max;
@@ -180,28 +200,20 @@ static inline char findAxis(struct xyz32 *axis) {
 
 /* Topics with buffers and subscribers */
 
-/*! internal */
+/*! internal - communication between threads */
 extern Topic<imuData> imu_topic;
 static CommBuffer<imuData> imuBuffer;
 static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
 
-extern Topic<imuPublish> ahrs_topic;
-static CommBuffer<imuPublish> ahrsBuffer;
+extern Topic<ahrsPublish> ahrs_topic;
+static CommBuffer<ahrsPublish> ahrsBuffer;
 static Subscriber ahrsSubscriber(ahrs_topic, ahrsBuffer, "AHRS Subscriber");
-
-extern Topic<RPY> xm_topic;
-static CommBuffer<RPY> xmBuffer;
-static Subscriber xmSubscriber(xm_topic,xmBuffer, "XM Subscriber");
-
-extern Topic<RPY> gyro_topic;
-static CommBuffer<RPY> gyroBuffer;
-static Subscriber gyroSubscriber(gyro_topic,gyroBuffer, "Gyro Subscriber");
 
 extern Topic<electricalStruct> electrical_topic;
 static CommBuffer<electricalStruct> electricalBuffer;
 static Subscriber lightSubscriber(electrical_topic,electricalBuffer, "Electrical Subscriber");
 
-/*! external */
+/*! external - telemetry*/
 extern Topic<tmStructIMU> tm_topic_imu;
 static CommBuffer<tmStructIMU> tmIMUBuffer;
 static Subscriber tmIMUSubscriber(tm_topic_imu, tmIMUBuffer, "Telemetry IMU Subscriber");
@@ -209,7 +221,5 @@ static Subscriber tmIMUSubscriber(tm_topic_imu, tmIMUBuffer, "Telemetry IMU Subs
 extern Topic<tmStructElectrical> tm_topic_electrical;
 static CommBuffer<tmStructElectrical> tmElectricalBuffer;
 static Subscriber tmElectricalSubscriber(tm_topic_electrical, tmElectricalBuffer, "Telemetry IMU Subscriber");
-
-extern HAL_UART uart3;
 
 #endif /* BASICS_H_ */

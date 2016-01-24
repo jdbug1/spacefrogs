@@ -22,19 +22,19 @@
 		new_angle = get_Angle();
 		e = ref_Ang - new_angle;
 
-		if (pi->state == closed){
+		if (pi->get_State() == closed){
 			P = P1_closed;
 			I = I1_closed;
 			D = D1_closed;
 			N = N_closed;
 			speed_lim = wl_closed;
-		} else if (pi->state == deployed){
+		} else if (pi->get_State() == deployed){
 			P = P1_deployed;
 			I = I1_deployed;
 			D = D1_deployed;
 			N = N_deployed;
 			speed_lim = wl_deployed;
-		} else if (pi->state == extended){
+		} else if (pi->get_State() == extended){
 			P = P1_extended;
 			I = I1_extended;
 			D = D1_extended;

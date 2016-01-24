@@ -1,8 +1,11 @@
 /*
  * Telemetry.cpp
  *
- *  Created on: 13.12.2015
- *      Author: JackVEnterprises
+ *  Only used for debugging tasks
+ *  TODO remove before final presentation and if everything else works
+ *  @author	Sven Jörissen
+ *  @date	13.12.2015
+ *
  */
 
 #include "Telemetry.h"
@@ -21,18 +24,16 @@ void Telemetry::init() {
 
 void Telemetry::run() {
 	imuData imu;
-	imuPublish ahrs;
+	ahrsPublish ahrs;
 	RPY xm;
 	RPY gyro;
 	electricalStruct lightValues;
 //	suspendCallerUntil();
 	while (1) {
-		suspendCallerUntil(NOW() + 250*MILLISECONDS);
+		suspendCallerUntil(NOW() + TELEMETRY_SAMPLING_RATE*MILLISECONDS);
 		if (timer) {
 			imuBuffer.get(imu);
 			ahrsBuffer.get(ahrs);
-			gyroBuffer.get(gyro);
-			xmBuffer.get(xm);
 			electricalBuffer.get(lightValues);
 			if (!imu.calibrating) {
 /*				PRINTF("Acc %5.2f %5.2f %5.2f\n", imu.ax, imu.ay, imu.az);
