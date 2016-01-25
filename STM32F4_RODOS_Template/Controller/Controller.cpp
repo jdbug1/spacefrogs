@@ -16,6 +16,7 @@ void * operator new(size_t size)
 		this->El = El;
 		pi 		 = new PI("PI", El);
 		pid 	 = new PID("PID", pi);
+		control = speed_control;
 
 	}
 	Controller::~Controller(){
@@ -39,11 +40,21 @@ void * operator new(size_t size)
 			}
 
 			t2 = NOW();
-			suspendCallerUntil(NOW() + Ts1 - (t2-t1));
+			uint16_t delay = Ts1 - (t2-t1);
+			PRINTF("Delay: %u/n", delay);
+			if (delay > 0) {
+				suspendCallerUntil(NOW() + Ts1 - (t2-t1));
+			} else {
+				PRINTF("Loop took too long \n");
+			}
 		}
 	}
 
 	void Controller::set_control(bool control){
 		this->control = control;
+	}
+
+	void Controller::set_State(int state){
+		this->pi->set_State(state);
 	}
 

@@ -68,9 +68,7 @@
 
 	float PID::get_Angle() {
 		ahrsBuffer.get(imu);
-		float heading = imu.heading;
-		// Some filtering code
-		return heading;
+		return imu.heading;
 	}
 
 	PID::PID(const char* name, PI* pi){

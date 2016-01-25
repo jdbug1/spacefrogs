@@ -55,8 +55,9 @@
 
 	float PI::get_Velocity() {
 		ahrsBuffer.get(imu);
-		float velocity = imu.wx;
-		// Some filtering code
+		float ang = imu.heading;
+		float velocity = (ang - ang_temp)/Ts2;
+		ang_temp = ang;
 		return velocity;
 	}
 
@@ -64,6 +65,8 @@
 		i_temp = 0;
 		PWM_temp = 0;
 		ref_Vel = 0;
+		state = closed;
+		ang_temp = imu.heading;
 		this->El = El;
 	}
 
@@ -77,5 +80,9 @@
 
 	float PI::get_State() {
 		return this->state;
+	}
+
+	void PI::set_State(int state){
+		this->state = state;
 	}
 

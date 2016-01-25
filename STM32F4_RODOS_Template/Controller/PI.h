@@ -32,7 +32,8 @@
 
 class PI {
 private:
-	float i_temp, PWM_temp, ref_Vel, state;
+	float i_temp, PWM_temp, ref_Vel, ang_temp;
+	int state;
 	ahrsPublish imu;
 	Electrical* El;
 
@@ -45,7 +46,7 @@ public:
 	void set_Velocity(float ref_vel);
 	/*Sets the value of ref_Vel*/
 
-	void set_State(int i);
+	void set_State(int state);
 
 	float get_State();
 
