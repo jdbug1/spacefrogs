@@ -36,8 +36,8 @@ HAL_GPIO HBRIDGE_C_INB(GPIO_074);
 HAL_PWM DEPLOYMENT_2_C(PWM_IDX14);
 
 /* H-Bridge D - thermal knife & electromagnet */
-HAL_GPIO THERMAL_KNIFE(GPIO_076);	//D-B
-HAL_GPIO ELECTROMAGNET(GPIO_079);	//D-A
+HAL_GPIO THERMAL_KNIFE(GPIO_076);	//D-A
+HAL_GPIO ELECTROMAGNET(GPIO_079);	//D-B
 HAL_GPIO HBDRIGE_D_PWM(GPIO_063);
 
 /* Lightsensor registers and adresses */
@@ -75,7 +75,7 @@ void Electrical::run() {
 	Solar_Current.init(SolarCurrentADC_2);
 
 
-	HAL_I2C_2.init(400000);
+//	HAL_I2C_2.init(400000);
 	HAL_I2C_1.init(400000);
 
 	//Generate new currentsensor object
@@ -101,7 +101,7 @@ void Electrical::run() {
 	HBRIDGE_C_INA.init(true, 1, 1);
 	HBRIDGE_C_INB.init(true, 1, 0);
 
-	HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
+	int retVal = HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
 
 	int16_t channel_0, channel_1;
 	electricalStruct values;
@@ -137,7 +137,7 @@ void Electrical::setMainMotorSpeed(int *speed) {
 		HBRIDGE_A_INB.setPins(1);
 	}
 	MAIN_ENGINE_A.write(abs(*speed * 10));
-	PRINTF("Main engine duty cycle set to %d%%\n",*speed);
+//	PRINTF("Main engine duty cycle set to %d%%\n",*speed);
 }
 
 /*
@@ -154,7 +154,7 @@ void Electrical::setDeployment1Speed(int *speed) {
 		HBRIDGE_B_INB.setPins(1);
 	}
 	DEPLOYMENT_1_B.write(abs(*speed * 10));
-	PRINTF("Deployment 1 duty cycle set to %d%%\n",*speed);
+//	PRINTF("Deployment 1 duty cycle set to %d%%\n",*speed);
 }
 
 /*
@@ -171,7 +171,7 @@ void Electrical::setDeployment2Speed(int *speed) {
 		HBRIDGE_C_INB.setPins(1);
 	}
 	DEPLOYMENT_2_C.write(abs(*speed * 10));
-	PRINTF("Deployment 2 duty cycle set to %d%%\n",*speed);
+//	PRINTF("Deployment 2 duty cycle set to %d%%\n",*speed);
 }
 
 /*
@@ -189,7 +189,7 @@ void Electrical::setKnife(int *status) {
 		THERMAL_KNIFE.setPins(0);
 		knife = 0;
 	}
-	PRINTF("Thermal Knife %s %d\n",(*status == 1)?"activated":"deactivated",*status);
+//	PRINTF("Thermal Knife %s %d\n",(*status == 1)?"activated":"deactivated",*status);
 }
 
 /*
@@ -207,7 +207,7 @@ void Electrical::setMagnet(int *status) {
 		ELECTROMAGNET.setPins(0);
 		em = 0;
 	}
-	PRINTF("Electromagnet %s %d\n",(*status == 1)?"activated":"deactivated",*status);
+//	PRINTF("Electromagnet %s %d\n",(*status == 1)?"activated":"deactivated",*status);
 }
 
 /*

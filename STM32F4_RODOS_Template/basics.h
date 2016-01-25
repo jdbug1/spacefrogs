@@ -222,4 +222,7 @@ extern Topic<tmStructElectrical> tm_topic_electrical;
 static CommBuffer<tmStructElectrical> tmElectricalBuffer;
 static Subscriber tmElectricalSubscriber(tm_topic_electrical, tmElectricalBuffer, "Telemetry IMU Subscriber");
 
+extern Topic<char*> tm_topic_incoming;
+
+
 #endif /* BASICS_H_ */

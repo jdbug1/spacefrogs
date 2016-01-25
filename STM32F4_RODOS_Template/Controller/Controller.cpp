@@ -28,7 +28,7 @@ void * operator new(size_t size)
 	}
 
 	void Controller::run(){
-		uint16_t t1, t2;
+		int64_t t1, t2;
 		while(true){
 			t1 = NOW();
 
@@ -40,10 +40,10 @@ void * operator new(size_t size)
 			}
 
 			t2 = NOW();
-			uint16_t delay = Ts1 - (t2-t1);
-			PRINTF("Delay: %u/n", delay);
+			int64_t delay = 10 - ((t2-t1)/1000000.0);
+//			PRINTF("Delay in ms: %lld\n", delay);
 			if (delay > 0) {
-				suspendCallerUntil(NOW() + Ts1 - (t2-t1));
+				suspendCallerUntil(NOW() + (Ts1*MILLISECONDS - ((t2-t1)/1000000.0)));
 			} else {
 				PRINTF("Loop took too long \n");
 			}
@@ -56,5 +56,9 @@ void * operator new(size_t size)
 
 	void Controller::set_State(int state){
 		this->pi->set_State(state);
+	}
+
+	void Controller::set_Velocity(float rev_val) {
+		pi->set_Velocity(rev_val);
 	}
 

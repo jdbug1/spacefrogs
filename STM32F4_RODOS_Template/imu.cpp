@@ -38,14 +38,19 @@ HAL_GPIO USERBUTTON(GPIO_000); 	//UserButton
 /*
  * The rotation matrix from the matlab script
  */
-float el_ma[3][3] = {{	  3.9419,   -0.0282,   -0.8055},
-                     {	 -0.0282,    3.5682,    0.1643},
-                     {	 -0.8055,    0.1643,    5.2197}};
+float el_ma[3][3] = {{	    -1.2143,    6.3892,    0.6054},
+	    				{6.3892,    6.1326,   -1.8173},
+	    				{0.6054,   -1.8173,   51.9001}};
+//						3.9419,   -0.0282,   -0.8055},
+//                     {	 -0.0282,    3.5682,    0.1643},
+//                     {	 -0.8055,    0.1643,    5.2197}};
 
 /*
  * The scale factors from the matlab script
  */
-float el_sc[3] = {-157.3306,   -0.3943,   72.4050};
+float el_sc[3] = {-120.5047,    9.4105,   37.7048};
+//float el_sc[3] = {-157.3306,   -0.3943,   72.4050};
+
 
 /*
  * Contructor for imu class
@@ -55,17 +60,20 @@ float el_sc[3] = {-157.3306,   -0.3943,   72.4050};
 IMU::IMU(const char* name) : Thread (name) {
 
 	/* default gyroscope offsets */
-	g_offset.x = -3356.0;
-	g_offset.y = 189.0;
-	g_offset.z = 64.0;
+	g_offset.x = 60.4;
+	g_offset.y = 28.9;
+	g_offset.z = 14.6;
 	/* default magnetometer offsets for hard iron calibration */
-	m_offset.xMax = 300;
-	m_offset.xMin = -436;
-	m_offset.yMax = 467;
-	m_offset.yMin = -456;
-	m_offset.zMin = 187;
-	m_offset.zMax = -495;
-	/* TODO default accelerometer offsets */
+	m_offset.xMax = 189;
+	m_offset.xMin = -533;
+	m_offset.yMax = 389;
+	m_offset.yMin = -278;
+	m_offset.zMin = 101;
+	m_offset.zMax = -559;
+	/* default accelerometer offsets */
+	a_offset.x = 1496;
+	a_offset.y = -243;
+	a_offset.z = 1047;
 
 }
 
@@ -119,8 +127,8 @@ void IMU::initSensors() {
 void IMU::run() {
 	int64_t t1,t2;
 	int counter = 0;
+	float temp_heading;
 	TIME_LOOP(0,IMU_SAMPLING_RATE*MILLISECONDS) {
-//		counter++;
 //		t1 = NOW();
 		if (calibrate_magnetometer) {
 			calibrateMag();
@@ -134,11 +142,25 @@ void IMU::run() {
 			calculateAcc();
 			imu_topic.publish(imu_data);
 			complementaryFilter();
-			publish.heading = ahrs_euler.heading;
+/*			publish.heading = ahrs_euler.heading;
 			publish.roll = ahrs_euler.roll;
 			publish.pitch = ahrs_euler.pitch;
 			publish.wx = imu_data.wx;
+			publish.gyro_heading = gyro_euler.heading;
+			publish.xm_heading = xm_euler.heading;
 			ahrs_topic.publish(publish);
+*/			if (counter <= MEAN_FILTER_SAMPLES - 1) {
+				counter++;
+				temp_heading += ahrs_euler.heading;
+			} else if (counter == MEAN_FILTER_SAMPLES) {
+				publish.heading = temp_heading/(float)MEAN_FILTER_SAMPLES;
+				publish.roll = ahrs_euler.roll;
+				publish.pitch = ahrs_euler.pitch;
+				publish.wx = imu_data.wx;
+				ahrs_topic.publish(publish);
+				temp_heading = 0;
+				counter = 0;
+			}
 		}
 
 //		t2 = NOW();
@@ -327,7 +349,7 @@ void IMU::calibrateAcc() {
 	a_offset.y /=2.0;
 	a_offset.z /= 2.0;
 	imu_data.calibrating = false;
-	PRINTF("Offsets [mg] found!\nX: %5.2f Y: %5.2f Z: %5.2f\n",a_offset.x*ACC_SENSITIVITY_2,a_offset.y*ACC_SENSITIVITY_2,a_offset.z*ACC_SENSITIVITY_2);
+	PRINTF("Offsets [mg] found!\nX: %d Y: %d Z: %d\n",a_offset.x,a_offset.y,a_offset.z);
 	suspendCallerUntil(NOW()+2*SECONDS);
 	calibrate_accelerometer = false;
 }
@@ -355,12 +377,17 @@ void IMU::calculateMag() {
 	readMag();
 	float mv[3];
 	/* soft iron calibration */
-	mv[0] = m_raw.x - el_sc[0];
+/*	mv[0] = m_raw.x - el_sc[0];
 	mv[1] = m_raw.y - el_sc[1];
 	mv[2] = m_raw.z - el_sc[2];
 	imu_data.mx = el_ma[0][0] * mv[0] + el_ma[0][1] * mv[1] + el_ma[0][2] * mv[2];
 	imu_data.my = el_ma[1][0] * mv[0] + el_ma[1][1] * mv[1] + el_ma[1][2] * mv[2];
 	imu_data.mz = el_ma[2][0] * mv[0] + el_ma[2][1] * mv[1] + el_ma[2][2] * mv[2];
+	*/
+	/* hard iron calibration */
+	imu_data.mx = ((((float)m_raw.x)-m_offset.xMin)/(m_offset.xMax-m_offset.xMin)) * 2 - 1;
+	imu_data.my = ((((float)m_raw.y)-m_offset.yMin)/(m_offset.yMax-m_offset.yMin)) * 2 - 1;
+	imu_data.mz = ((((float)m_raw.z)-m_offset.zMin)/(m_offset.zMax-m_offset.zMin)) * 2 - 1;
 }
 
 /*
@@ -384,7 +411,7 @@ void IMU::calibrateMag() {
 		if (m_raw.y > m_offset.yMax) m_offset.yMax = m_raw.y;
 		if (m_raw.z < m_offset.zMin) m_offset.zMin = m_raw.z;
 		if (m_raw.z > m_offset.zMax) m_offset.zMax = m_raw.z;
-		suspendCallerUntil(NOW()+5*MILLISECONDS);
+		suspendCallerUntil(NOW()+2*MILLISECONDS);
 	}
 	PRINTF("Values [raw] found!\nX: %d %d\nY: %d %d\nZ: %d %d\nCalibration of magnetometer done!\n",
 			m_offset.xMax, m_offset.xMin,
@@ -392,6 +419,7 @@ void IMU::calibrateMag() {
 			m_offset.zMax, m_offset.zMin);
 	imu_data.calibrating = false;
 	suspendCallerUntil(NOW()+2*SECONDS);
+	USERBUTTON.resetInterruptEventStatus();
 	calibrate_magnetometer = false;
 }
 

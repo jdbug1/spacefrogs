@@ -41,8 +41,8 @@
 		}
 		I_term = I*i_temp;
 
-		//Duty_Cycle = PWM_temp - (P_term + I_term);
-		Duty_Cycle = P_term + I_term;
+		Duty_Cycle = PWM_temp - (P_term + I_term);
+		//Duty_Cycle = P_term + I_term;
 
 		if (Duty_Cycle < -100){
 			Duty_Cycle = -100;

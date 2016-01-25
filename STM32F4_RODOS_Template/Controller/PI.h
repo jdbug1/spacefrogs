@@ -22,7 +22,7 @@
 #define deployed 	1
 #define extended	2
 
-#define Ts2 		0.01
+#define Ts2 		10
 #define Ibound2 	100
 
 #include "rodos.h"

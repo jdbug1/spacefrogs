@@ -16,6 +16,7 @@
 #include "Electrical.h"
 #include "Telemetry.h"
 #include "Camera/Camera.h"
+#include "Controller/Controller.h"
 
 namespace RODOS {
 extern HAL_UART uart_stdout;
@@ -42,6 +43,7 @@ IMU imu("imu");
 Telemetry telemetry("Telemetry");
 Electrical electrical("electrical");
 Camera camera("camera",Teleuart);
+Controller controller("controller",&electrical);
 
 /* LEDs for fun */
 HAL_GPIO GreenLED(LED_GREEN);
@@ -68,6 +70,12 @@ public:
 
 	}
 	void run() {
+		PRINTF("This is a test programm for the controller!\n");
+		controller.set_Velocity(M_PI/32.0);
+		PRINTF("Velocity set to PI/32\n");
+		suspendCallerUntil(NOW()+15*SECONDS);
+		controller.set_Velocity(0);
+
 
 	}
 
@@ -83,7 +91,7 @@ private:
 		END_MISSION,
 	};
 };
-
+Mission mission("mission");
 
 /***********************************************************************/
 
@@ -263,6 +271,12 @@ public:
 			TELECOMMAND=SET_TELEMETRY;
 		}
 
+		/* ID 6 - Controller */
+		else if (compare(identifier, (char*) "SSP")) {
+			STATE=GET_INT;
+			TELECOMMAND=SET_SPEED;
+		}
+
 		//default
 		else {
 			PRINTF("ERROR, wrong syntax! Please try again!\n");
@@ -368,6 +382,7 @@ private:
 		SET_TELEMETRY,
 		TAKE_PICTURE,
 		ACTIVATE_CAMERA,
+		SET_SPEED,
 	} TELECOMMAND;
 
 
