@@ -33,7 +33,7 @@
 class PI {
 private:
 	float i_temp, PWM_temp, ref_Vel, ang_temp;
-	int state;
+	uint state : 2;
 	ahrsPublish imu;
 	Electrical* El;
 
