@@ -8,18 +8,18 @@
 #ifndef PID_H_
 #define PID_H_
 
-#define P1_closed	0.67843361450436
-#define I1_closed	0.00367323802974744
-#define D1_closed	-0.518588367213643
-#define N_closed	1.29969476217057
-#define P1_deployed 20
-#define I1_deployed 0.2
-#define D1_deployed 5
-#define N_deployed	2
-#define P1_extended 20
-#define I1_extended 0.2
-#define D1_extended	5
-#define N_extended	2
+#define P1_closed	0.420934675
+#define I1_closed	0.001291925
+#define D1_closed	-0.704908233
+#define N_closed	0.495087645
+#define P1_deployed 0.420934675
+#define I1_deployed 0.001291925
+#define D1_deployed -0.704908233
+#define N_deployed	0.495087645
+#define P1_extended 0.420934675
+#define I1_extended 0.001291925
+#define D1_extended	-0.704908233
+#define N_extended	0.495087645
 
 #define Ts1 Ts2
 #define Ibound1 100

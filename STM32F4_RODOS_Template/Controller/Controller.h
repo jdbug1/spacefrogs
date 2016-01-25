@@ -14,6 +14,8 @@
 #include "PID.h"
 #include "PI.h"
 
+void * operator new(size_t size);
+
 class Controller : public Thread{
 private:
 	PID* pid;

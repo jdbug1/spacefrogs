@@ -7,6 +7,11 @@
 
 #include "Controller.h"
 
+void * operator new(size_t size)
+{
+  return malloc(size);
+}
+
 	Controller::Controller(const char* name, Electrical* El){
 		this->El = El;
 		pi 		 = new PI("PI", El);

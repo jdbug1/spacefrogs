@@ -8,14 +8,14 @@
 #ifndef PI_H_
 #define PI_H_
 
-#define P2_closed 	-40.2426953452767
-#define I2_closed 	-371.710687698176
+#define P2_closed 	-42.38843906
+#define I2_closed 	-381.0334781
 #define wl_closed	12
-#define P2_deployed 20
-#define I2_deployed 0.2
-#define wl_deployed 7
-#define P2_extended 20
-#define I2_extended 0.2
+#define P2_deployed -42.38843906
+#define I2_deployed -381.0334781
+#define wl_deployed 11
+#define P2_extended -42.38843906
+#define I2_extended -381.0334781
 #define wl_extended 7
 
 #define closed 		0
