@@ -8,38 +8,29 @@
 #include "PID.h"
 
 	void PID::Change_Ref_Vel(){
-		float iMax =  Ibound1;
-		float iMin = -Ibound1;
 		float e;
-		float P_term;
-		float I_term;
-		float D_term;
-		float speed_lim;
 		float new_angle;
 		float ref_speed;
-		float a, b, c;
 
 		new_angle = get_Angle();
 		e = ref_Ang - new_angle;
 
-		if (pi->get_State() == closed){
-			a = P1_closed + I1_closed * Ts2 / 2 + D1_closed / Ts2;
-			b = -P1_closed + I1_closed * Ts2 / 2 - 2 * D1_closed / Ts2;
-			c = D1_closed / Ts2;
-			speed_lim = wl_closed;
-		} else if (pi->get_State() == deployed){
-			a = P1_deployed + I1_deployed * Ts2 / 2 + D1_deployed / Ts2;
-			b = -P1_deployed + I1_deployed * Ts2 / 2 - 2 * D1_deployed / Ts2;
-			c = D1_deployed / Ts2;
-			speed_lim = wl_deployed;
-		} else if (pi->get_State() == extended){
-			a = P1_extended + I1_extended * Ts2 / 2 + D1_extended / Ts2;
-			b = -P1_extended + I1_extended * Ts2 / 2 - 2 * D1_extended / Ts2;
-			c = D1_extended / Ts2;
-			speed_lim = wl_extended;
+		float e_slope = (e - e_old);
+
+		e_sum += e;
+
+		if (e_sum > 100){
+			e_sum = 100;
+		} else if (e_sum < -100) {
+			e_sum = -100;
 		}
 
-		ref_speed = a*e + b*e_1 + c*e_2;
+		float P_term = Po * e;
+		float I_term = Io * e_sum;
+		float D_term = Do * e_slope;
+
+
+		ref_speed = P_term + I_term + D_term;
 
 		if (ref_speed < -speed_lim){
 			ref_speed = -speed_lim;
@@ -47,8 +38,7 @@
 			ref_speed = speed_lim;
 		}
 
-		e_2 = e_1;
-		e_1 = e;
+		e_old = e;
 
 		pi->set_Velocity(ref_speed);
 	}
@@ -59,8 +49,8 @@
 	}
 
 	PID::PID(const char* name, PI* pi){
-		e_1 = 0;
-		e_2 = 0;
+		e_sum = 0;
+		e_old = 0;
 		ref_Ang = 0;
 		this->pi = pi;
 	}

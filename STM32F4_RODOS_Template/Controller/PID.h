@@ -8,21 +8,10 @@
 #ifndef PID_H_
 #define PID_H_
 
-#define P1_closed	0.420934675
-#define I1_closed	0.001291925
-#define D1_closed	-0.704908233
-#define N_closed	0.495087645
-#define P1_deployed 0.420934675
-#define I1_deployed 0.001291925
-#define D1_deployed -0.704908233
-#define N_deployed	0.495087645
-#define P1_extended 0.420934675
-#define I1_extended 0.001291925
-#define D1_extended	-0.704908233
-#define N_extended	0.495087645
-
-#define Ts1 Ts2
-#define Ibound1 100
+#define Po 1
+#define Io 1
+#define Do 1
+#define speed_lim 80
 
 #include "rodos.h"
 #include "hal.h"
@@ -31,7 +20,7 @@
 
 class PID {
 private:
-	float e_1, e_2, ref_Ang;
+	float e_sum, e_old, ref_Ang;
 	ahrsPublish imu;
 	PI* pi;
 

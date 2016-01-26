@@ -8,22 +8,11 @@
 #ifndef PI_H_
 #define PI_H_
 
-#define P2_closed 	-42.38843906
-#define I2_closed 	-381.0334781
-#define wl_closed	12
-#define P2_deployed -42.38843906
-#define I2_deployed -381.0334781
-#define wl_deployed 11
-#define P2_extended -42.38843906
-#define I2_extended -381.0334781
-#define wl_extended 7
+#define Pi -1
+#define Ii -1
 
-#define closed 		0
-#define deployed 	1
-#define extended	2
-
-#define Ts2 		10
-#define Ibound2 	100
+#define Tms 		10
+#define Ts			Tms/1000
 
 #include "rodos.h"
 #include "hal.h"
@@ -32,8 +21,7 @@
 
 class PI {
 private:
-	float e_1, ref_Vel, ang_temp;
-	uint state : 2;
+	float e_sum, ref_Vel, ang_temp, P_term, I_term;
 	ahrsPublish imu;
 	Electrical* El;
 
@@ -46,10 +34,6 @@ public:
 
 	void set_Velocity(float ref_vel);
 	/*Sets the value of ref_Vel*/
-
-	void set_State(int state);
-
-	float get_State();
 
 	void Change_Duty_Cycle();
 	/*Sends a calculated value to the electrical element main motor*/

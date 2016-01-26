@@ -43,7 +43,7 @@ void * operator new(size_t size)
 			int64_t delay = 10 - ((t2-t1)/1000000.0);
 //			PRINTF("Delay in ms: %lld\n", delay);
 			if (delay > 0) {
-				suspendCallerUntil(NOW() + (Ts1*MILLISECONDS - ((t2-t1)/1000000.0)));
+				suspendCallerUntil(NOW() + (Tms*MILLISECONDS - ((t2-t1)/1000000.0)));
 			} else {
 				PRINTF("Loop took too long \n");
 			}
@@ -52,11 +52,6 @@ void * operator new(size_t size)
 
 	void Controller::set_control(bool control){
 		this->control = control;
-	}
-
-	void Controller::set_State(int state){
-		this->pi->set_State(state);
-		PRINTF("State = %s\n", state);
 	}
 
 	void Controller::set_Velocity(float rev_val) {

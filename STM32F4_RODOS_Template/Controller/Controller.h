@@ -30,7 +30,6 @@ public:
 	void init();
 	void run();
 	void set_control(bool control);
-	void set_State(int state);
 	void set_Velocity(float rev_val);
 
 };

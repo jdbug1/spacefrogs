@@ -8,34 +8,30 @@
 #include "PI.h"
 
 	void PI::Change_Duty_Cycle(){
-		float iMax =  Ibound2;
-		float iMin = -Ibound2;
 		float e;
-		float P_term;
-		float I_term;
 		float new_Vel;
-		float P, I;
-
-		if (state == closed){
-			P = P2_closed;
-			I = I2_closed;
-		} else if (state == deployed){
-			P = P2_deployed;
-			I = I2_deployed;
-		} else if (state == extended){
-			P = P2_extended;
-			I = I2_extended;
-		}
 
 		new_Vel = get_Velocity();
 		e = ref_Vel - new_Vel;
 
-		float a = P + I*Ts2/2;
-		float b = -P + I*Ts2/2;
+		e_sum += e;
 
-		DC = DC + a*e + b*e_1;
+		if (e_sum > 100){
+			e_sum = 100;
+		} else if (e_sum < -100){
+			e_sum = -100;
+		}
 
-		e_1 = e;
+		float P_term = Pi*e;
+		float I_term = Ii*e_sum;
+
+		DC = DC - P_term - I_term;
+
+		if (DC > 100){
+			DC = 100;
+		} else if (DC < -100) {
+			DC = -100;
+		}
 
 		PRINTF("DC is %d\n", DC);
 
@@ -45,15 +41,16 @@
 	float PI::get_Velocity() {
 		ahrsBuffer.get(imu);
 		float ang = imu.heading;
-		float velocity = (ang - ang_temp)/Ts2;
+		float velocity = (ang - ang_temp)/Ts;
 		ang_temp = ang;
 		return velocity;
 	}
 
 	PI::PI(const char* name, Electrical* El){
-		e_1 = 0;
+		P_term = 0;
+		I_term = 0;
+		e_sum = 0;
 		ref_Vel = 0;
-		state = closed;
 		ang_temp = imu.heading;
 		DC = 0;
 		this->El = El;
@@ -65,13 +62,5 @@
 
 	void PI::set_Velocity(float ref_vel){
 		ref_vel = ref_Vel;
-	}
-
-	float PI::get_State() {
-		return this->state;
-	}
-
-	void PI::set_State(int state){
-		this->state = state;
 	}
 
