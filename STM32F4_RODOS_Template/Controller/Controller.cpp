@@ -56,6 +56,7 @@ void * operator new(size_t size)
 
 	void Controller::set_State(int state){
 		this->pi->set_State(state);
+		PRINTF("State = %s\n", state);
 	}
 
 	void Controller::set_Velocity(float rev_val) {

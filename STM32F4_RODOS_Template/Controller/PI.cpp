@@ -14,7 +14,6 @@
 		float P_term;
 		float I_term;
 		float new_Vel;
-		float Duty_Cycle;
 		float P, I;
 
 		if (state == closed){
@@ -31,25 +30,14 @@
 		new_Vel = get_Velocity();
 		e = ref_Vel - new_Vel;
 
-		P_term = P*e;
+		float a = P + I*Ts2/2;
+		float b = -P + I*Ts2/2;
 
-		i_temp += e*Ts2;
-		if (i_temp < iMin){
-			i_temp = iMin;
-		} else if (i_temp > iMax){
-			i_temp = iMax;
-		}
-		I_term = I*i_temp;
+		DC = DC + a*e + b*e_1;
 
-		Duty_Cycle = PWM_temp - (P_term + I_term);
-		//Duty_Cycle = P_term + I_term;
+		e_1 = e;
 
-		if (Duty_Cycle < -100){
-			Duty_Cycle = -100;
-		} else if (Duty_Cycle > 100){
-			Duty_Cycle = 100;
-		}
-		int DC = int(Duty_Cycle);
+		PRINTF("DC is %d\n", DC);
 
 		El->setMainMotorSpeed(&DC);
 	}
@@ -63,11 +51,11 @@
 	}
 
 	PI::PI(const char* name, Electrical* El){
-		i_temp = 0;
-		PWM_temp = 0;
+		e_1 = 0;
 		ref_Vel = 0;
 		state = closed;
 		ang_temp = imu.heading;
+		DC = 0;
 		this->El = El;
 	}
 

@@ -17,51 +17,38 @@
 		float speed_lim;
 		float new_angle;
 		float ref_speed;
-		float P, I, D, N;
+		float a, b, c;
 
 		new_angle = get_Angle();
 		e = ref_Ang - new_angle;
 
 		if (pi->get_State() == closed){
-			P = P1_closed;
-			I = I1_closed;
-			D = D1_closed;
-			N = N_closed;
+			a = P1_closed + I1_closed * Ts2 / 2 + D1_closed / Ts2;
+			b = -P1_closed + I1_closed * Ts2 / 2 - 2 * D1_closed / Ts2;
+			c = D1_closed / Ts2;
 			speed_lim = wl_closed;
 		} else if (pi->get_State() == deployed){
-			P = P1_deployed;
-			I = I1_deployed;
-			D = D1_deployed;
-			N = N_deployed;
+			a = P1_deployed + I1_deployed * Ts2 / 2 + D1_deployed / Ts2;
+			b = -P1_deployed + I1_deployed * Ts2 / 2 - 2 * D1_deployed / Ts2;
+			c = D1_deployed / Ts2;
 			speed_lim = wl_deployed;
 		} else if (pi->get_State() == extended){
-			P = P1_extended;
-			I = I1_extended;
-			D = D1_extended;
-			N = N_extended;
+			a = P1_extended + I1_extended * Ts2 / 2 + D1_extended / Ts2;
+			b = -P1_extended + I1_extended * Ts2 / 2 - 2 * D1_extended / Ts2;
+			c = D1_extended / Ts2;
 			speed_lim = wl_extended;
 		}
 
-		P_term = P*e;
-
-		i_temp += e*Ts2;
-		if (i_temp < iMin){
-			i_temp = iMin;
-		} else if (i_temp > iMax){
-			i_temp = iMax;
-		}
-		I_term = I*i_temp;
-
-		D_term = D*(d_temp - e)/Ts2; // I need to add N here in some way?????
-		d_temp = e;
-
-		ref_speed = P_term + I_term + D_term;
+		ref_speed = a*e + b*e_1 + c*e_2;
 
 		if (ref_speed < -speed_lim){
 			ref_speed = -speed_lim;
 		} else if (ref_speed > speed_lim){
 			ref_speed = speed_lim;
 		}
+
+		e_2 = e_1;
+		e_1 = e;
 
 		pi->set_Velocity(ref_speed);
 	}
@@ -72,9 +59,8 @@
 	}
 
 	PID::PID(const char* name, PI* pi){
-		i_temp = 0;
-		d_temp = 0;
-		PWM_temp = 0;
+		e_1 = 0;
+		e_2 = 0;
 		ref_Ang = 0;
 		this->pi = pi;
 	}

@@ -31,7 +31,7 @@
 
 class PID {
 private:
-	float i_temp, d_temp, PWM_temp, ref_Ang;
+	float e_1, e_2, ref_Ang;
 	ahrsPublish imu;
 	PI* pi;
 

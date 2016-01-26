@@ -70,9 +70,9 @@ public:
 
 	}
 	void run() {
-		PRINTF("This is a test programm for the controller!\n");
-		controller.set_Velocity(M_PI/32.0);
-		PRINTF("Velocity set to PI/32\n");
+		PRINTF("This is a test program for the controller!\n");
+		controller.set_Velocity(M_PI/16.0);
+		PRINTF("Velocity set to PI/16\n");
 		suspendCallerUntil(NOW()+15*SECONDS);
 		controller.set_Velocity(0);
 

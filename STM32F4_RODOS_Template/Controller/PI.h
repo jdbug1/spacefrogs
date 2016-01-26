@@ -32,7 +32,7 @@
 
 class PI {
 private:
-	float i_temp, PWM_temp, ref_Vel, ang_temp;
+	float e_1, ref_Vel, ang_temp;
 	uint state : 2;
 	ahrsPublish imu;
 	Electrical* El;
@@ -40,6 +40,7 @@ private:
 	float get_Velocity();
 
 public:
+	int DC;
 	PI(const char* name, Electrical* El);
 	virtual ~PI();
 
