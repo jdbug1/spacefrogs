@@ -27,7 +27,7 @@
 			t1 = NOW();
 
 			if (control == speed_control){
-				//pi->Change_Duty_Cycle();
+				pi->Change_Duty_Cycle();
 			}
 			else if (control == heading_control){
 				pid->Change_Ref_Vel();
@@ -72,7 +72,7 @@
 
 	void Controller::set_Velocity(float rev_val) {
 		PRINTF("Rotating at %f\n", rev_val*180.0/M_PI);
-
+		pi->set_Velocity(rev_val);
 	}
 
 	void Controller::set_Reference_Angle(float ref_angle) {
