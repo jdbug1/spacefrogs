@@ -7,6 +7,7 @@
 
 #include "Controller.h"
 
+	//Hello Kajsa
 	Controller::Controller(const char* name, Electrical* El) : SubscriberReceiver<tcStruct>(tm_topic_incoming, "SubRec Controller for Telecommands") {
 		this->El = El;
 		pi 		 = new PI("PI", El);
