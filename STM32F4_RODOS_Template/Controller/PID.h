@@ -21,7 +21,7 @@
 class PID {
 private:
 	float e_sum, e_old, ref_Ang;
-	ahrsPublish imu;
+	tmStructIMU imu;
 	PI* pi;
 
 	float get_Angle();
@@ -32,6 +32,8 @@ public:
 
 	void Change_Ref_Vel();
 	/*Calculates a reference velocity and sets it in the PI controller*/
+
+	void Set_Ref_Angle(float ref_angle);
 };
 
 #endif /* PID_H_ */

@@ -7,19 +7,24 @@
 
 #include "PI.h"
 
-	void PI::Change_Duty_Cycle(){
+int counter;
+void PI::Change_Duty_Cycle(){
 		float e;
 		float new_Vel;
 
 		new_Vel = get_Velocity();
 		e = ref_Vel - new_Vel;
+		counter++;
 
 		e_sum += e;
-
-		if (e_sum > 100){
-			e_sum = 100;
-		} else if (e_sum < -100){
-			e_sum = -100;
+//		PRINTF("E: %d ESum: %d\n ",e*180.0/M_PI,e_sum);
+		if (e_sum > 100.0){
+			e_sum = 100.0;
+		} else if (e_sum < -100.0){
+			e_sum = -100.0;
+		} else if ((e < 0.3) && (e > -0.3)) {
+			e_sum = 0.0;
+			e = 0.0;
 		}
 
 		float P_term = Pi*e;
@@ -32,17 +37,28 @@
 		} else if (DC < -100) {
 			DC = -100;
 		}
+		if (counter == 15) {
+			PRINTF("%5.2f %5.2f %5.2f",ref_Vel, new_Vel, e);
+			counter = 0;
+			PRINTF("P %5.2f I %5.2f\n",P_term,I_term);
+		}
 
-		PRINTF("DC is %d\n", DC);
+		DC = DC - (int)(P_term - I_term);
+
+		if (DC > 100){
+			DC = 100;
+		} else if (DC < -100) {
+			DC = -100;
+		}
+
+//		PRINTF("DC is %d\n", DC);
 
 		El->setMainMotorSpeed(&DC);
 	}
 
 	float PI::get_Velocity() {
-		ahrsBuffer.get(imu);
-		float ang = imu.heading;
-		float velocity = (ang - ang_temp)/Ts;
-		ang_temp = ang;
+		imuBuffer.get(imu);
+		float velocity = (imu.wz*180.0/M_PI);
 		return velocity;
 	}
 
@@ -61,6 +77,7 @@
 	}
 
 	void PI::set_Velocity(float ref_vel){
-		ref_vel = ref_Vel;
+
+		ref_Vel = ref_vel*180.0/M_PI;
 	}
 

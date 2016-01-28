@@ -32,44 +32,21 @@ public:
 
   void run() {
 	  uint32_t cnt=0;
-	  tmStructIMU tm_imu;
-	  tmStructElectrical tm_electrical;
 
-	  imuData imu;
-	  imuPublish ahrs;
-	  electricalStruct electrical;
+	  tmStructIMU imu;
+	  tmStructElectrical electrical;
 
 	  wf121.init("YETENet","yeteyete");
 	  wf121.enableUDPConnection(0xFF01A8C0,37647);
 	  while (1) {
 		  if (send_telemetry) {
 			  imuBuffer.get(imu);
-			  ahrsBuffer.get(ahrs);
 			  electricalBuffer.get(electrical);
-
 			  cnt++;
-			  tm_imu.ax = imu.ax;
-			  tm_imu.ay = imu.ay;
-			  tm_imu.az = imu.az;
-			  tm_imu.mx = imu.mx;
-			  tm_imu.my = imu.my;
-			  tm_imu.mz = imu.mz;
-			  tm_imu.wx = imu.wx;
-			  tm_imu.wy = imu.wy;
-			  tm_imu.wz = imu.wz;
-
-			  tm_imu.roll = ahrs.roll;
-			  tm_imu.pitch = ahrs.pitch;
-			  tm_imu.heading = ahrs.heading;
-
-			  tm_electrical.knife = electrical.knife_status;
-			  tm_electrical.em = electrical.em_status;
-			  tm_electrical.light = electrical.light_status;
-			  tm_electrical.light_value = electrical.light;
 
 //			  topicCounter1.publish(cnt);
-			  tm_topic_imu.publish(tm_imu);
-			  tm_topic_electrical.publish(tm_electrical);
+			  tm_topic_imu.publish(imu);
+			  tm_topic_electrical.publish(electrical);
 
 		  }
 		  suspendCallerUntil(NOW()+250*MILLISECONDS);

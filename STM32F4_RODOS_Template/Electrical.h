@@ -22,12 +22,16 @@
 /* Currentsensor */
 #define BATTERY_CURRENT		0b1000000
 
-class Electrical : public Thread {
+
+class Electrical : public Thread, public SubscriberReceiver<tcStruct> {
 public:
 	Electrical(const char* name);
 
 	void init();
 	void run();
+	void put(tcStruct &command);
+	void handleTelecommand(tcStruct *tc);
+
 
 	void setMainMotorSpeed(int *speed);
 	void setDeployment1Speed(int *speed);
@@ -36,10 +40,15 @@ public:
 	void setMagnet(int *status);
 	void readLightsensor(int16_t *channel_0, int16_t *channel_1);
 	void setLightsensor(int *value);
+	void deployRacks(int *status);
 
-
-	bool read_lightsensor;
-	bool em, knife;
+private:
+	tcStruct current_tc;
+	tmStructElectrical values;
+	bool deploy_racks;
+	bool racks, electromagnet, lightsensor, thermal_knife, solar_panels;
+	int32_t lightsensor_value;
+	float battery_voltage, battery_current, solar_panel_voltage, solar_panel_current;
 
 };
 

@@ -46,6 +46,8 @@ extern HAL_I2C HAL_I2C_2;
 #define ELECTRICAL_SAMPLING_RATE	100
 #define TELEMETRY_SAMPLING_RATE		250
 
+extern void * operator new(size_t size);
+
 /* important structs */
 
 struct xyz32 {
@@ -58,12 +60,6 @@ struct xyz16 {
 	int16_t x;
 	int16_t y;
 	int16_t z;
-};
-
-struct xyzFloat {
-	float x;
-	float y;
-	float z;
 };
 
 struct RPY {
@@ -85,15 +81,6 @@ struct imuData {
 		bool calibrating;
 };
 
-struct ahrsPublish {
-	float wx;
-	float roll;
-	float pitch;
-	float heading;
-	float xm_heading;
-	float gyro_heading;
-};
-
 struct magMaxMin {
 	int16_t xMax;
 	int16_t xMin;
@@ -103,32 +90,69 @@ struct magMaxMin {
 	int16_t zMin;
 };
 
-struct Quat {
-	float q0;
-	float q1;
-	float q2;
-	float q3;
-};
-
 struct electricalStruct {
-	float light;
 	bool light_status;
-	bool em_status;
-	bool knife_status;
+	bool electromagnet;
+	bool thermal_knife;
+	bool racks;
+	bool solar_panels;
+	int32_t lightsensor_value;
+	float battery_current;
 	float battery_voltage;
-	float bus_current;
+	float solar_panel_voltage;
+	float solar_panel_current;
+
 };
 
 struct tmStructIMU {
-	float ax,ay,az;
-	float mx,my,mz;
-	float wx,wy,wz;
-	float roll, pitch, heading;
+	float ax;
+	float ay;
+	float az;
+	float wx;
+	float wy;
+	float wz;
+	float roll;
+	float pitch;
+	float heading;
+	float xm_heading;
+	float gyro_heading;
+	bool calibrating;
 };
 
 struct tmStructElectrical {
-	bool light, em, knife;
-	int16_t light_value;
+	bool light_status;
+	bool electromagnet;
+	bool thermal_knife;
+	bool racks;
+	bool solar_panels;
+	int32_t lightsensor_value;
+	float battery_current;
+	float battery_voltage;
+	float solar_panel_voltage;
+	float solar_panel_current;
+};
+
+struct tmStructMission {
+
+};
+
+struct tcStruct {
+	int id;
+	int command;
+	int value;
+};
+
+/* enums */
+enum mission_states {
+	START,
+	CALIBRATE,
+	FIND_SUN,
+	DEPLOY_PANELS,
+	SEND_PICTURE,
+	START_MISSION,
+	FIND_DEBRIS,
+	TRANSPORT_DEBRIS,
+	END_MISSION,
 };
 
 /* useful functions */
@@ -201,16 +225,12 @@ static inline char findAxis(struct xyz32 *axis) {
 /* Topics with buffers and subscribers */
 
 /*! internal - communication between threads */
-extern Topic<imuData> imu_topic;
-static CommBuffer<imuData> imuBuffer;
+extern Topic<tmStructIMU> imu_topic;
+static CommBuffer<tmStructIMU> imuBuffer;
 static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
 
-extern Topic<ahrsPublish> ahrs_topic;
-static CommBuffer<ahrsPublish> ahrsBuffer;
-static Subscriber ahrsSubscriber(ahrs_topic, ahrsBuffer, "AHRS Subscriber");
-
-extern Topic<electricalStruct> electrical_topic;
-static CommBuffer<electricalStruct> electricalBuffer;
+extern Topic<tmStructElectrical> electrical_topic;
+static CommBuffer<tmStructElectrical> electricalBuffer;
 static Subscriber lightSubscriber(electrical_topic,electricalBuffer, "Electrical Subscriber");
 
 /*! external - telemetry*/
@@ -222,7 +242,11 @@ extern Topic<tmStructElectrical> tm_topic_electrical;
 static CommBuffer<tmStructElectrical> tmElectricalBuffer;
 static Subscriber tmElectricalSubscriber(tm_topic_electrical, tmElectricalBuffer, "Telemetry IMU Subscriber");
 
-extern Topic<char*> tm_topic_incoming;
+extern Topic<tmStructMission> tm_topic_mission;
+static CommBuffer<tmStructMission> tmMissionBuffer;
+static Subscriber tmMissionSubscriber(tm_topic_mission, tmMissionBuffer, "Telemetry Mission Subscriber");
+
+extern Topic<tcStruct> tm_topic_incoming;
 
 
 #endif /* BASICS_H_ */

@@ -7,17 +7,11 @@
 
 #include "Controller.h"
 
-void * operator new(size_t size)
-{
-  return malloc(size);
-}
-
-	Controller::Controller(const char* name, Electrical* El){
+	Controller::Controller(const char* name, Electrical* El) : SubscriberReceiver<tcStruct>(tm_topic_incoming, "SubRec Controller for Telecommands") {
 		this->El = El;
 		pi 		 = new PI("PI", El);
 		pid 	 = new PID("PID", pi);
 		control = speed_control;
-
 	}
 	Controller::~Controller(){
 
@@ -33,7 +27,7 @@ void * operator new(size_t size)
 			t1 = NOW();
 
 			if (control == speed_control){
-				pi->Change_Duty_Cycle();
+				//pi->Change_Duty_Cycle();
 			}
 			else if (control == heading_control){
 				pid->Change_Ref_Vel();
@@ -50,11 +44,38 @@ void * operator new(size_t size)
 		}
 	}
 
+	void Controller::put(tcStruct &command) {
+		if (command.id == 2) {
+			this->handleTelecommand(&command);
+		}
+	}
+
+	void Controller::handleTelecommand(tcStruct * tc) {
+		int command = tc->command;
+		PRINTF("Command was %d\n",command);
+		switch (command) {
+		case 2001:
+			this->control = speed_control;
+			this->set_Velocity(tc->value * M_PI / 180.0);
+			break;
+		case 2002:
+			this->control = heading_control;
+			this->set_Reference_Angle(tc->value * M_PI / 180.0);
+			break;
+		}
+	}
+
+
 	void Controller::set_control(bool control){
 		this->control = control;
 	}
 
 	void Controller::set_Velocity(float rev_val) {
-		pi->set_Velocity(rev_val);
+		PRINTF("Rotating at %f\n", rev_val*180.0/M_PI);
+
+	}
+
+	void Controller::set_Reference_Angle(float ref_angle) {
+		pid->Set_Ref_Angle(ref_angle);
 	}
 

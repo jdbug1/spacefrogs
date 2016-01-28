@@ -10,6 +10,7 @@
 
 #include "rodos.h"
 #include "hal.h"
+#include "../basics.h"
 
 #include "stm32f4xx.h"
 #include "stm32f4xx_usart.h"
@@ -34,43 +35,36 @@
 #define THRESHOLD					165
 #define MINPIXELTHRESHOLD			80
 
-#define Q1							0.25f
-#define HALF						0.5f
-#define Q3							0.75f
 
-
-class Camera: public Thread {
+class Camera: public Thread, public SubscriberReceiver<tcStruct> {
 private:
-	Dcmi dcmi;
+	Dcmi* dcmi;
 	Sccb sccb;
-	HAL_GPIO ledo;
-	HAL_GPIO reset;
-	HAL_GPIO power;
+	HAL_GPIO* ledo;
+	HAL_GPIO* reset;
+	HAL_GPIO* power;
+	HAL_UART* tmUart;
 
 	uint8_t DCMI_Buffer[IMAGESIZE];
 
-	HAL_UART tmUart;
+
 
 	bool active;
 	bool processData;
 	bool sendPic;
-	bool activateCamera;
 
 	void InitOV7670();
-	void delayx(unsigned int ms);
 	void Capture();
-	void DetectSatellite();
+	void put(tcStruct &command);
+	void handleTelecommand(tcStruct *tc);
+
 public:
 	Camera(const char* name, HAL_UART uart);
 	void init();
 	void run();
-	uint8_t* getPicture();
-	void sendPicture(bool value);
-	void ProcessData();
 	void turnOn(void);
 	void turnOff(void);
-	void initialize();
-	void initCamera();
+	void sendPicture(bool value);
 };
 
 #endif /* CAMERA_H_ */

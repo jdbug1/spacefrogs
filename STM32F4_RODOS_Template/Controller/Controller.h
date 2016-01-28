@@ -14,9 +14,7 @@
 #include "PID.h"
 #include "PI.h"
 
-void * operator new(size_t size);
-
-class Controller : public Thread{
+class Controller : public Thread, public SubscriberReceiver<tcStruct> {
 private:
 	PID* pid;
 	PI*  pi;
@@ -29,8 +27,12 @@ public:
 
 	void init();
 	void run();
+	void put(tcStruct &command);
+	void handleTelecommand(tcStruct *tc);
+
 	void set_control(bool control);
 	void set_Velocity(float rev_val);
+	void set_Reference_Angle(float ref_angle);
 
 };
 

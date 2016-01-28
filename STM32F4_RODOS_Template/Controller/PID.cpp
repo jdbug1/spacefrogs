@@ -40,11 +40,13 @@
 
 		e_old = e;
 
+		e_old = e;
+
 		pi->set_Velocity(ref_speed);
 	}
 
 	float PID::get_Angle() {
-		ahrsBuffer.get(imu);
+		imuBuffer.get(imu);
 		return imu.heading;
 	}
 
@@ -57,4 +59,8 @@
 
 	PID::~PID() {
 
+	}
+
+	void PID::Set_Ref_Angle(float ref_angle) {
+		this->ref_Ang = ref_angle*180.0/M_PI;
 	}

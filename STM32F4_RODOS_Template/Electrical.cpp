@@ -12,7 +12,7 @@
 
 #define SolarVoltageADC_1		ADC_CH_001	//PA1
 #define SolarCurrentADC_2		ADC_CH_002	//PA2
-#define ADC_1_SCALE_FACTOR	1458.0
+#define ADC_1_SCALE_FACTOR		1458.0
 
 HAL_ADC Solar_Voltage(ADC_IDX1);
 HAL_ADC Solar_Current(ADC_IDX1);
@@ -50,10 +50,9 @@ uint8_t CHANNEL_1_LOW[1] = {DATA_1_LOW | 0xA0};
  *
  * @param	const char* name	name of the object
  */
-Electrical::Electrical(const char* name) : Thread(name) {
-	read_lightsensor = false;
-	knife = false;
-	em = false;
+Electrical::Electrical(const char* name) : Thread(name), SubscriberReceiver<tcStruct>(tm_topic_incoming, "SubRec Electrical for Telecommands") {
+	deploy_racks = false;
+
 }
 
 /*
@@ -76,7 +75,7 @@ void Electrical::run() {
 
 
 //	HAL_I2C_2.init(400000);
-	HAL_I2C_1.init(400000);
+//	HAL_I2C_1.init(400000);
 
 	//Generate new currentsensor object
 	Currentsensor battery_current(BATTERY_CURRENT);
@@ -104,22 +103,79 @@ void Electrical::run() {
 	int retVal = HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
 
 	int16_t channel_0, channel_1;
-	electricalStruct values;
-	read_lightsensor = 0;
+	int64_t t1 = 0;
+	int64_t t2 = 0;
+	float diff = 0;
 	while (1) {
-		if (read_lightsensor) {
+		if (deploy_racks) {
+			if (current_tc.value == 0) {
+				deployRacks(&current_tc.value);
+			} else {
+				if (t1 == 0) {
+					t1 = NOW();
+					deployRacks(&current_tc.value);
+				}
+				t2 = NOW();
+				diff = (t2-t1)/1000000000.0;
+				PRINTF("Diff: %f\n",diff);
+				if (diff >= 10) {
+					if (current_tc.value == 1) 	racks = true;
+					else racks = false;
+					current_tc.value = 0;
+					deployRacks(&current_tc.value);
+					deploy_racks = false;
+					t1 = t2 = 0;
+					diff = 0;
+				}
+			}
+
+		}
+		if (lightsensor) {
 			readLightsensor(&channel_0,&channel_1);
 		}
-		values.light = (float)channel_0;
-		values.light_status = read_lightsensor;
-		values.knife_status = knife;
-		values.em_status = em;
+		values.lightsensor_value = (float)channel_0;
+		values.light_status = lightsensor;
+		values.thermal_knife = thermal_knife;
+		values.electromagnet = electromagnet;
+		values.solar_panels = solar_panels;
 		values.battery_voltage = battery_current.getBusVoltage_V();
-		values.bus_current = battery_current.getCurrent_mA();
+		values.battery_current = battery_current.getCurrent_mA();
+		values.solar_panel_current = solar_panel_current;
+		values.solar_panel_voltage = solar_panel_voltage;
 		electrical_topic.publish(values);
 //		PRINTF("Battery Current is %f Voltage is %f\n",battery_current.getCurrent_mA(), battery_current.getBusVoltage_V());
 		suspendCallerUntil(NOW()+ELECTRICAL_SAMPLING_RATE*MILLISECONDS);
-//		PRINTF("Solar_Voltage Voltage ADC =  %02.2f V\n",Solar_Voltage.read(SolarVoltageADC)/ADC_1_SCALE_FACTOR);
+//		PRINTF("Solar Voltage %d V\n",Solar_Voltage.read(SolarVoltageADC_1));
+//		PRINTF("Solar Current %d A\n",Solar_Current.read(SolarCurrentADC_2));
+	}
+}
+
+void Electrical::put(tcStruct &command) {
+	if (command.id == 3) {
+		PRINTF("Received message\n");
+		current_tc = command;
+		this->handleTelecommand(&current_tc);
+
+	}
+}
+
+void Electrical::handleTelecommand(tcStruct * tc) {
+	int command = tc->command;
+	PRINTF("Command was %d\n",command);
+	switch(command) {
+	case 3001:
+		PRINTF("Deploying racks initiated!\n");
+		deploy_racks = true;
+		break;
+	case 3002:
+		setMagnet(&current_tc.value);
+		break;
+	case 3003:
+		setKnife(&current_tc.value);
+		break;
+	case 3004:
+		setMainMotorSpeed(&current_tc.value);
+		break;
 	}
 }
 
@@ -183,11 +239,11 @@ void Electrical::setKnife(int *status) {
 	if (*status == 1) {
 		PRINTF("ON\n");
 		THERMAL_KNIFE.setPins(1);
-		knife = 1;
+		thermal_knife = true;
 	} else {
 		PRINTF("OFF\n");
 		THERMAL_KNIFE.setPins(0);
-		knife = 0;
+		thermal_knife = false;
 	}
 //	PRINTF("Thermal Knife %s %d\n",(*status == 1)?"activated":"deactivated",*status);
 }
@@ -201,11 +257,11 @@ void Electrical::setMagnet(int *status) {
 	if (*status == 1) {
 		PRINTF("ON\n");
 		ELECTROMAGNET.setPins(1);
-		em = 1;
+		electromagnet = true;
 	} else {
 		PRINTF("OFF\n");
 		ELECTROMAGNET.setPins(0);
-		em = 0;
+		electromagnet = false;
 	}
 //	PRINTF("Electromagnet %s %d\n",(*status == 1)?"activated":"deactivated",*status);
 }
@@ -232,11 +288,30 @@ void Electrical::readLightsensor(int16_t *channel_0, int16_t *channel_1) {
  */
 void Electrical::setLightsensor(int *value) {
 	if (*value) {
-		read_lightsensor = true;
+		lightsensor = true;
 		PRINTF("Lightsensor enabled\n");
 	} else {
-		read_lightsensor = false;
+		lightsensor = false;
 		PRINTF("Lightsensor disabled\n");
+	}
+}
+
+void Electrical::deployRacks(int *status) {
+	int speed1 = 18;
+	int speed2 = 20;
+	if (*status == 1) {
+		setDeployment1Speed(&speed1);
+		setDeployment2Speed(&speed2);
+	} else if (*status == 0) {
+		speed1 = speed2 = *status;
+		setDeployment1Speed(&speed1);
+		setDeployment2Speed(&speed2);
+		deploy_racks = false;
+	} else if (*status == -1) {
+		speed1 *= -1;
+		speed2 *= -1;
+		setDeployment1Speed(&speed1);
+		setDeployment2Speed(&speed2);
 	}
 }
 

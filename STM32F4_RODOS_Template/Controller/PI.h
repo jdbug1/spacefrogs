@@ -8,8 +8,8 @@
 #ifndef PI_H_
 #define PI_H_
 
-#define Pi -1
-#define Ii -1
+#define Pi -1.0
+#define Ii -0.01
 
 #define Tms 		10
 #define Ts			Tms/1000
@@ -22,7 +22,7 @@
 class PI {
 private:
 	float e_sum, ref_Vel, ang_temp, P_term, I_term;
-	ahrsPublish imu;
+	tmStructIMU imu;
 	Electrical* El;
 
 	float get_Velocity();

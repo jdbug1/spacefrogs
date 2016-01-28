@@ -12,7 +12,7 @@
 #include "hal.h"
 #include "basics.h"
 
-class IMU : public Thread {
+class IMU : public Thread, public SubscriberReceiver<tcStruct> {
 public:
 	IMU(const char* name);
 	virtual ~IMU();
@@ -27,6 +27,8 @@ private:
 	void initSensors();
 	void run();
 	void I2CError();
+	void put(tcStruct &command);
+	void handleTelecommand(tcStruct *tc);
 
 	void readGyro();
 	void calculateGyro();
@@ -44,16 +46,16 @@ private:
 	void calculateHeading();
 	void calculateGyroEuler();
 	void complementaryFilter();
+	void changeGain(float a);
 
 private:
-	int g_counter, a_counter, m_counter;
-	xyz16 a_offset, a_raw, m_raw, g_raw;
-	xyz32 a_temp, m_temp, g_temp;
+	tcStruct current_tc;
+	float alpha;
+	xyz16 a_offset, g_offset, a_raw, m_raw, g_raw;
 	magMaxMin m_offset;
 	imuData imu_data;
-	xyzFloat g_offset;
 	RPY xm_euler, gyro_euler, ahrs_euler;
-	ahrsPublish publish;
+	tmStructIMU publish;
 	bool calibrate_magnetometer, calibrate_gyroscope, calibrate_accelerometer;
 };
 
