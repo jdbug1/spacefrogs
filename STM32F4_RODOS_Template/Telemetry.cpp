@@ -42,7 +42,7 @@ void Telemetry::run() {
 				PRINTF("Com %5.2f\n", radToDeg(imu.heading));
 			}
 			if (lightValues.light_status) {
-				PRINTF("Lightsensor: %d\n",lightValues.lightsensor_value);
+				PRINTF("Lightsensor: %u\n",lightValues.lightsensor_value);
 			}
 		}
 	}

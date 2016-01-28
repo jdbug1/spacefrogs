@@ -58,6 +58,8 @@ public:
 	Camera(const char* name, HAL_UART uart);
 	void init();
 	void run();
+	void put(tcStruct &command);
+	void handleTelecommand(tcStruct *tc);
 	uint8_t* getPicture();
 	void sendPicture(bool value);
 	void ProcessData();

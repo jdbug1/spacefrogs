@@ -99,14 +99,18 @@ void Camera::run() {
 	int counter = 0;
 	while (1) {
 		if (sendPic) {
-			for (int i = 1; i < IMAGESIZE + 1; i += 2) {
-				counter++;
-				PRINTF("%03u ", DCMI_Buffer[i - 1]);
-				if (counter == WIDTH) {
-					PRINTF("\n");
-					counter = 0;
-				}
+//			for (int i = 1; i < IMAGESIZE + 1; i += 2) {
+//				counter++;
+//				PRINTF("%03u ", DCMI_Buffer[i - 1]);
+//				if (counter == WIDTH) {
+//					PRINTF("\n");
+//					counter = 0;
+//				}
+//			}
+			for (int i = 1; i < IMAGESIZE + 1; i++) {
+				PRINTF("%03u", DCMI_Buffer[i - 1]);
 			}
+			PRINTF("FRAME STOP\n");
 			sendPic = false;
 			active = false;
 		}
@@ -152,6 +156,24 @@ void Camera::run() {
 
 }
 
+void Camera::put(tcStruct &command) {
+	if (command.id == 4) {
+		//PRINTF("Received message\n");
+		this->handleTelecommand(&command);
+
+	}
+}
+
+void Camera::handleTelecommand(tcStruct * tc) {
+	int command = tc->command;
+		//PRINTF("Command was %d\n",command);
+		switch(command) {
+		case 4001:
+			turnOn();
+			break;
+		}
+}
+
 void Camera::delayx(unsigned int ms) {
 	//4694 = 1 ms
 	while (ms > 1) {
@@ -164,7 +186,7 @@ void Camera::delayx(unsigned int ms) {
 void Camera::turnOn(void){
 	this->active = true;
 	//ledo.setPins(1);
-	xprintf("Cam active\n");
+	//xprintf("Cam active\n");
 	Capture();
 }
 void Camera::turnOff(void){
@@ -172,4 +194,6 @@ void Camera::turnOff(void){
 	xprintf("Cam inactive\n");
 	//ledo.setPins(0);
 }
+
+
 /***********************************************************************/

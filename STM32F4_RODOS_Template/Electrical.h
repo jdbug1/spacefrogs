@@ -41,6 +41,8 @@ public:
 	void readLightsensor(int16_t *channel_0, int16_t *channel_1);
 	void setLightsensor(int *value);
 	void deployRacks(int *status);
+	void readADCVoltage();
+	void readADCCurrent();
 
 private:
 	tcStruct current_tc;

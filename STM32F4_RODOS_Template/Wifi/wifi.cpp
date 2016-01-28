@@ -56,7 +56,6 @@ public:
 			  imu_publish.xm_heading = imu.xm_heading;
 			  imu_publish.gyro_heading = imu.gyro_heading;
 			  imu_publish.calibrating = imu.calibrating;
-			  PRINTF("Lightsensor %d\n",lightValues.lightsensor_value);
 			  tm_topic_imu.publish(imu_publish);
 			  tm_topic_electrical.publish(lightValues);
 

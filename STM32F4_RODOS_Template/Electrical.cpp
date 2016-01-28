@@ -10,9 +10,10 @@
 #include "Electrical.h"
 
 
-#define SolarVoltageADC_1		ADC_CH_001	//PA1
-#define SolarCurrentADC_2		ADC_CH_002	//PA2
-#define ADC_1_SCALE_FACTOR		1458.0
+#define SolarVoltageADC_1		ADC_CH_001		//PA1
+#define SolarCurrentADC_2		ADC_CH_002		//PA2
+#define ADC_VOLTAGE_SCALE_FACTOR		(4.9/3735.0)	//raw to V
+#define ADC_CURRENT_SCALE_FACTOR		(29.0/411.0)	//raw to mA
 
 HAL_ADC Solar_Voltage(ADC_IDX1);
 HAL_ADC Solar_Current(ADC_IDX1);
@@ -53,11 +54,11 @@ uint8_t CHANNEL_1_LOW[1] = {DATA_1_LOW | 0xA0};
 Electrical::Electrical(const char* name) : Thread(name), SubscriberReceiver<tcStruct>(tm_topic_incoming, "SubRec Electrical for Telecommands") {
 	deploy_racks = false;
 
-	thermal_knife = true;
+	thermal_knife = false;
 	lightsensor = true;
-	racks = true;
-	solar_panels = true;
-	electromagnet = true;
+	racks = false;
+	solar_panels = false;
+	electromagnet = false;
 }
 
 /*
@@ -68,7 +69,7 @@ void Electrical::init() {
 
 /*
  * Run function with main while loop
- * Default sampling rate is 100ms --> change in basics.h
+ * Default sampling rate is 50ms --> change in basics.h
  *
  * @publishes	status values of devices and data from lightsensor
  *
@@ -122,7 +123,6 @@ void Electrical::run() {
 				}
 				t2 = NOW();
 				diff = (t2-t1)/1000000000.0;
-				PRINTF("Diff: %f\n",diff);
 				if (diff >= 10) {
 					if (current_tc.value == 1) 	racks = true;
 					else racks = false;
@@ -139,16 +139,20 @@ void Electrical::run() {
 			readLightsensor(&channel_0,&channel_1);
 		}
 
+		readADCCurrent();
+		readADCVoltage();
+
 		values.light_status = lightsensor;
 		values.electromagnet = electromagnet;
 		values.thermal_knife = thermal_knife;
 		values.racks = racks;
 		values.solar_panels = solar_panels;
-		values.lightsensor_value = (int)channel_0;
-		values.battery_current = battery_current.getCurrent_mA();
-		values.battery_voltage = battery_current.getBusVoltage_V();
+		values.lightsensor_value = float(channel_0);
+		values.battery_current = 0;
+		values.battery_voltage = 0;
 		values.solar_panel_current = solar_panel_current;
 		values.solar_panel_voltage = solar_panel_voltage;
+//		PRINTF("Current %5.2fmA Voltage %5.2fV\n",values.solar_panel_current, values.solar_panel_voltage);
 		electrical_topic.publish(values);
 //		PRINTF("Battery Current is %f Voltage is %f\n",battery_current.getCurrent_mA(), battery_current.getBusVoltage_V());
 		suspendCallerUntil(NOW()+ELECTRICAL_SAMPLING_RATE*MILLISECONDS);
@@ -171,7 +175,6 @@ void Electrical::handleTelecommand(tcStruct * tc) {
 	PRINTF("Command was %d\n",command);
 	switch(command) {
 	case 3001:
-		PRINTF("Deploying racks initiated!\n");
 		deploy_racks = true;
 		break;
 	case 3002:
@@ -314,10 +317,19 @@ void Electrical::deployRacks(int *status) {
 		setDeployment2Speed(&speed2);
 		deploy_racks = false;
 	} else if (*status == -1) {
-		speed1 *= -1;
-		speed2 *= -1;
+		speed1 = -18;
+		speed2 = -19;
+		PRINTF("Pulling in with %d %d\n",speed1, speed2);
 		setDeployment1Speed(&speed1);
 		setDeployment2Speed(&speed2);
 	}
+}
+
+void Electrical::readADCVoltage() {
+	solar_panel_voltage = ((float)Solar_Voltage.read(SolarVoltageADC_1)*ADC_VOLTAGE_SCALE_FACTOR);
+}
+
+void Electrical::readADCCurrent() {
+	solar_panel_current = ((float)Solar_Voltage.read(SolarCurrentADC_2)*ADC_CURRENT_SCALE_FACTOR);
 }
 

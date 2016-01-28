@@ -15,6 +15,9 @@ int counter;
 		new_angle = get_Angle();
 		e = ref_Ang - new_angle;
 
+		if (abs(e) > 180) {
+			e -= 360;
+		}
 		float e_slope = (e - e_old);
 
 		e_sum += e;

@@ -43,7 +43,7 @@ extern HAL_I2C HAL_I2C_2;
 
 /* Sampling rates for all threads in [ms] */
 #define IMU_SAMPLING_RATE			2
-#define ELECTRICAL_SAMPLING_RATE	100
+#define ELECTRICAL_SAMPLING_RATE	50
 #define TELEMETRY_SAMPLING_RATE		250
 
 extern void * operator new(size_t size);
@@ -130,7 +130,7 @@ struct tmStructElectrical {
 	bool thermal_knife;
 	bool racks;
 	bool solar_panels;
-	int lightsensor_value;
+	float lightsensor_value;
 	float battery_current;
 	float battery_voltage;
 	float solar_panel_voltage;
