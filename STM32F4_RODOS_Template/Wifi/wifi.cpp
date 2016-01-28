@@ -26,27 +26,39 @@ public:
   }
 
   void init() {
-	  gateway1.addTopicsToForward(&topicCounter1, &tm_topic_imu, &tm_topic_electrical);
+	  gateway1.addTopicsToForward(&tm_topic_imu, &tm_topic_electrical);
 	  send_telemetry = 1;
   }
 
   void run() {
-	  uint32_t cnt=0;
 
-	  tmStructIMU imu;
-	  tmStructElectrical electrical;
+	  imuData imu;
+	  tmStructElectrical lightValues;
+
+	  tmStructIMU imu_publish;
 
 	  wf121.init("YETENet","yeteyete");
 	  wf121.enableUDPConnection(0xFF01A8C0,37647);
 	  while (1) {
 		  if (send_telemetry) {
 			  imuBuffer.get(imu);
-			  electricalBuffer.get(electrical);
-			  cnt++;
+			  electricalBuffer.get(lightValues);
 
-//			  topicCounter1.publish(cnt);
-			  tm_topic_imu.publish(imu);
-			  tm_topic_electrical.publish(electrical);
+			  imu_publish.ax = imu.ax;
+			  imu_publish.ay = imu.ay;
+			  imu_publish.az = imu.az;
+			  imu_publish.wx = imu.wx;
+			  imu_publish.wy = imu.wy;
+			  imu_publish.wz = imu.wz;
+			  imu_publish.roll = imu.roll;
+			  imu_publish.pitch = imu.pitch;
+			  imu_publish.heading = imu.heading;
+			  imu_publish.xm_heading = imu.xm_heading;
+			  imu_publish.gyro_heading = imu.gyro_heading;
+			  imu_publish.calibrating = imu.calibrating;
+			  PRINTF("Lightsensor %d\n",lightValues.lightsensor_value);
+			  tm_topic_imu.publish(imu_publish);
+			  tm_topic_electrical.publish(lightValues);
 
 		  }
 		  suspendCallerUntil(NOW()+250*MILLISECONDS);

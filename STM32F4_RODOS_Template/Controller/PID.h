@@ -8,9 +8,9 @@
 #ifndef PID_H_
 #define PID_H_
 
-#define Po 1
-#define Io 1
-#define Do 1
+#define Po 1.0
+#define Io 0.001
+#define Do 0.3
 #define speed_lim 80
 
 #include "rodos.h"
@@ -21,7 +21,7 @@
 class PID {
 private:
 	float e_sum, e_old, ref_Ang;
-	tmStructIMU imu;
+	imuData imu;
 	PI* pi;
 
 	float get_Angle();

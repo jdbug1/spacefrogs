@@ -7,15 +7,13 @@
 
 
 #include "PI.h"
-
-int counter;
+int c;
 void PI::Change_Duty_Cycle(){
 		float e;
 		float new_Vel;
-
+		c++;
 		new_Vel = get_Velocity();
 		e = ref_Vel - new_Vel;
-		counter++;
 
 		e_sum += e;
 //		PRINTF("E: %d ESum: %d\n ",e*180.0/M_PI,e_sum);
@@ -38,9 +36,9 @@ void PI::Change_Duty_Cycle(){
 		} else if (DC < -100) {
 			DC = -100;
 		}
-		if (counter == 15) {
-			PRINTF("%5.2f %5.2f %5.2f",ref_Vel, new_Vel, e);
-			counter = 0;
+		if (c == 15) {
+			PRINTF("Ref Vel %3.2f Vel %3.2f E %3.2f ESum %5.2f",ref_Vel, new_Vel, e, e_sum);
+			c = 0;
 			PRINTF("P %5.2f I %5.2f\n",P_term,I_term);
 		}
 

@@ -1,10 +1,3 @@
-/*
- * Camera.h
- *
- *  Created on: 12.01.2015
- *      Author: Andreas Schartel
- */
-
 #ifndef CAMERA_H_
 #define CAMERA_H_
 
@@ -35,36 +28,43 @@
 #define THRESHOLD					165
 #define MINPIXELTHRESHOLD			80
 
+#define Q1							0.25f
+#define HALF						0.5f
+#define Q3							0.75f
+
 
 class Camera: public Thread, public SubscriberReceiver<tcStruct> {
 private:
-	Dcmi* dcmi;
+	Dcmi dcmi;
 	Sccb sccb;
-	HAL_GPIO* ledo;
-	HAL_GPIO* reset;
-	HAL_GPIO* power;
-	HAL_UART* tmUart;
+	HAL_GPIO ledo;
+	HAL_GPIO reset;
+	HAL_GPIO power;
 
 	uint8_t DCMI_Buffer[IMAGESIZE];
 
-
+	HAL_UART tmUart;
 
 	bool active;
 	bool processData;
 	bool sendPic;
+	bool activateCamera;
 
 	void InitOV7670();
+	void delayx(unsigned int ms);
 	void Capture();
-	void put(tcStruct &command);
-	void handleTelecommand(tcStruct *tc);
-
+	void DetectSatellite();
 public:
 	Camera(const char* name, HAL_UART uart);
 	void init();
 	void run();
+	uint8_t* getPicture();
+	void sendPicture(bool value);
+	void ProcessData();
 	void turnOn(void);
 	void turnOff(void);
-	void sendPicture(bool value);
+	void initialize();
+	void initCamera();
 };
 
 #endif /* CAMERA_H_ */

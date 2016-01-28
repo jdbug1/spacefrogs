@@ -12,7 +12,7 @@
 		this->El = El;
 		pi 		 = new PI("PI", El);
 		pid 	 = new PID("PID", pi);
-		control = speed_control;
+		control = heading_control;
 	}
 	Controller::~Controller(){
 

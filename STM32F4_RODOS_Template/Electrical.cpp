@@ -53,6 +53,11 @@ uint8_t CHANNEL_1_LOW[1] = {DATA_1_LOW | 0xA0};
 Electrical::Electrical(const char* name) : Thread(name), SubscriberReceiver<tcStruct>(tm_topic_incoming, "SubRec Electrical for Telecommands") {
 	deploy_racks = false;
 
+	thermal_knife = true;
+	lightsensor = true;
+	racks = true;
+	solar_panels = true;
+	electromagnet = true;
 }
 
 /*
@@ -133,13 +138,15 @@ void Electrical::run() {
 		if (lightsensor) {
 			readLightsensor(&channel_0,&channel_1);
 		}
-		values.lightsensor_value = (float)channel_0;
+
 		values.light_status = lightsensor;
-		values.thermal_knife = thermal_knife;
 		values.electromagnet = electromagnet;
+		values.thermal_knife = thermal_knife;
+		values.racks = racks;
 		values.solar_panels = solar_panels;
-		values.battery_voltage = battery_current.getBusVoltage_V();
+		values.lightsensor_value = (int)channel_0;
 		values.battery_current = battery_current.getCurrent_mA();
+		values.battery_voltage = battery_current.getBusVoltage_V();
 		values.solar_panel_current = solar_panel_current;
 		values.solar_panel_voltage = solar_panel_voltage;
 		electrical_topic.publish(values);
@@ -274,7 +281,6 @@ void Electrical::setMagnet(int *status) {
 void Electrical::readLightsensor(int16_t *channel_0, int16_t *channel_1) {
 	uint8_t data[2];
 	int retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_0_LOW,1,data,2);
-//	PRINTF("Low: %u High: %u\n", data[0],data[1]);
 	*channel_0 = data[1] << 8 | data[0];
 
 	retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_1_LOW,1,data,2);

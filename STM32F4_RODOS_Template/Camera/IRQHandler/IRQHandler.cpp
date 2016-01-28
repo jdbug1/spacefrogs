@@ -1,10 +1,3 @@
-/*
- * irqhandler.cpp
- *
- *  Created on: 12.01.2015
- *      Author: Andreas Schartel
- */
-
 #include "rodos.h"
 
 #include "stm32f4xx.h"

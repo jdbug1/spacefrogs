@@ -69,16 +69,16 @@ IMU::IMU(const char* name) : Thread (name), SubscriberReceiver<tcStruct>(tm_topi
 //	g_offset.y = 36.290;
 //	g_offset.z = 520.98;
 	//Atheels Board
-	g_offset.x = -940.0;
-	g_offset.y = 99.0;
-	g_offset.z = 457.3;
+	g_offset.x = -800.0;
+	g_offset.y = 45.0;
+	g_offset.z = 478.0;
 	/* default magnetometer offsets for hard iron calibration */
-	m_offset.xMax = 189;
-	m_offset.xMin = -533;
-	m_offset.yMax = 420;
-	m_offset.yMin = -278;
-	m_offset.zMin = 101;
-	m_offset.zMax = -593;
+	m_offset.xMax = 185;
+	m_offset.xMin = -500;
+	m_offset.yMax = 389;
+	m_offset.yMin = -296;
+	m_offset.zMin = 93;
+	m_offset.zMax = -648;
 	/* default accelerometer offsets */
 	//FloatSat07
 //	a_offset.x = 1496;
@@ -89,9 +89,9 @@ IMU::IMU(const char* name) : Thread (name), SubscriberReceiver<tcStruct>(tm_topi
 //	a_offset.y = -77;
 //	a_offset.z = -463;
 	//Atheels Board
-	a_offset.x = 2012;
-	a_offset.y = 898;
-	a_offset.z = 136;
+	a_offset.x = 1519;
+	a_offset.y = 228;
+	a_offset.z = 194;
 
 	this->alpha = ALPHA;
 	this->calibrate_accelerometer = this->calibrate_gyroscope = this->calibrate_magnetometer = false;
@@ -157,7 +157,7 @@ void IMU::run() {
 		} else if (calibrate_accelerometer) {
 			calibrateAcc();
 		} else {
-			publish.calibrating = false;
+			imu_data.calibrating = false;
 			calculateGyro();
 			calculateMag();
 			calculateAcc();
@@ -168,18 +168,12 @@ void IMU::run() {
 				temp_heading_xm += xm_euler.heading;
 				temp_heading_gyro += gyro_euler.heading;
 			} else if (counter == MEAN_FILTER_SAMPLES) {
-				publish.ax = imu_data.ax;
-				publish.ay = imu_data.ay;
-				publish.az = imu_data.az;
-				publish.wx = imu_data.wx;
-				publish.wy = imu_data.wy;
-				publish.wz = imu_data.wz;
-				publish.roll = ahrs_euler.roll;
-				publish.pitch = ahrs_euler.pitch;
-				publish.heading = temp_heading/(float)MEAN_FILTER_SAMPLES;
-				publish.gyro_heading = temp_heading_gyro/(float)MEAN_FILTER_SAMPLES;
-				publish.xm_heading = temp_heading_xm/(float)MEAN_FILTER_SAMPLES;
-				imu_topic.publish(publish);
+				imu_data.heading = temp_heading/(float)MEAN_FILTER_SAMPLES;
+				imu_data.gyro_heading = temp_heading_gyro/(float)MEAN_FILTER_SAMPLES;
+				imu_data.xm_heading = temp_heading_xm/(float)MEAN_FILTER_SAMPLES;
+				imu_data.roll = ahrs_euler.roll;
+				imu_data.pitch = ahrs_euler.pitch;
+				imu_topic.publish(imu_data);
 				temp_heading = temp_heading_xm = temp_heading_gyro = 0;
 				counter = 0;
 			}
@@ -237,6 +231,7 @@ void IMU::handleTelecommand(tcStruct * tc) {
 /*
  * Reads raw data from gyroscope
  */
+int iba = 0;
 void IMU::readGyro() {
 	uint8_t data[6] = {};
 	int retVal = HAL_I2C_2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
@@ -244,14 +239,9 @@ void IMU::readGyro() {
 	if (retVal <= 0) {
 		I2CError();
 	} else {
-//		counter++;
 		g_raw.x = (int16_t)((data[1] << 8) | data[0]);
 		g_raw.y = (int16_t)((data[3] << 8) | data[2]);
 		g_raw.z = (int16_t)((data[5] << 8) | data[4]);
-//		if (counter == 100) {
-//			PRINTF("%d,%d,%d\n",g_raw.x,g_raw.y,g_raw.z);
-//			counter = 0;
-//		}
 	}
 }
 
@@ -270,16 +260,15 @@ void IMU::calculateGyro() {
  * Takes X samples in standstill mode for each axis and averages them to get the zero offset
  */
 void IMU::calibrateGyro() {
-	publish.calibrating = true;
-	imu_topic.publish(publish);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	PRINTF("Calibrating gyro...\n");
 	int16_t tempX =0, tempY = 0, tempZ = 0;
 	xyz32 g_temp;
+	g_temp.x = g_temp.y = g_temp.z;
 	uint8_t data[6] = {};
 	int failCounter = 0;
-	int j = 0;
 	for (int i = 0; i < CALIBRATION_VALUES; i++) {
-		j = i;
 		int retVal = HAL_I2C_2.writeRead(LSM9DS0_G, LSM9DS0_OUT_X_L_G, 1, data, 6);
 		HAL_I2C_2.suspendUntilReadFinished();
 		if (retVal <= 0) {
@@ -296,9 +285,9 @@ void IMU::calibrateGyro() {
 			suspendCallerUntil(NOW()+5*MILLISECONDS);
 		}
 	}
-	g_offset.x = (int16_t)(g_temp.x/(float)(CALIBRATION_VALUES-failCounter));
-	g_offset.y = (int16_t)(g_temp.y/(float)(CALIBRATION_VALUES-failCounter));
-	g_offset.z = (int16_t)(g_temp.z/(float)(CALIBRATION_VALUES-failCounter));
+	g_offset.x = (g_temp.x/(float)(CALIBRATION_VALUES-failCounter));
+	g_offset.y = (g_temp.y/(float)(CALIBRATION_VALUES-failCounter));
+	g_offset.z = (g_temp.z/(float)(CALIBRATION_VALUES-failCounter));
 	imu_data.calibrating = false;
 	PRINTF("Gyro Offsets [raw] Found: X %d Y %d Z %d\n", g_offset.x,g_offset.y,g_offset.z);
 	suspendCallerUntil(NOW()+2*SECONDS);
@@ -335,8 +324,8 @@ void IMU::calculateAcc() {
  * Takes X samples in 3 different positions (one for each axis) to the the offset from 1g
  */
 void IMU::calibrateAcc() {
-	publish.calibrating = true;
-	imu_topic.publish(publish);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	bool buttonPressed = false;
 	USERBUTTON.resetInterruptEventStatus();
 	bool xAxis = false, yAxis = false, zAxis = false;
@@ -347,15 +336,16 @@ void IMU::calibrateAcc() {
 		buttonPressed = USERBUTTON.isDataReady();
 		if (buttonPressed) {
 			xyz32 a_temp;
+			a_temp.x = a_temp.y = a_temp.z = 0;
 			PRINTF("Getting samples, do not move device!\n");
 			suspendCallerUntil(NOW()+1*SECONDS);
 			buttonPressed = false;
 			USERBUTTON.resetInterruptEventStatus();
 			for (int i = 0; i < CALIBRATION_VALUES; i++) {
 				readAcc();
-				a_temp.x += a_raw.x;
-				a_temp.y += a_raw.y;
-				a_temp.z += a_raw.z;
+				a_temp.x += (int32_t)a_raw.x;
+				a_temp.y += (int32_t)a_raw.y;
+				a_temp.z += (int32_t)a_raw.z;
 				suspendCallerUntil(NOW() + 5*MILLISECONDS);
 			}
 			PRINTF("%d %d %d\n",a_temp.x,a_temp.y,a_temp.z);
@@ -445,8 +435,8 @@ void IMU::calculateMag() {
  * Finds min and max value for each axis
  */
 void IMU::calibrateMag() {
-	publish.calibrating = true;
-	imu_topic.publish(publish);
+	imu_data.calibrating = true;
+	imu_topic.publish(imu_data);
 	bool buttonPressed = false;
 	PRINTF("Calibrating Magnetometer! Move around every axis!\nPress UserButton, if finished!\n");
 	m_offset.xMin = m_offset.xMax = 0;

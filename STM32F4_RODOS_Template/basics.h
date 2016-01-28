@@ -78,6 +78,11 @@ struct imuData {
 		float wx;
 		float wy;
 		float wz;
+		float roll;
+		float pitch;
+		float heading;
+		float xm_heading;
+		float gyro_heading;
 		bool calibrating;
 };
 
@@ -125,7 +130,7 @@ struct tmStructElectrical {
 	bool thermal_knife;
 	bool racks;
 	bool solar_panels;
-	int32_t lightsensor_value;
+	int lightsensor_value;
 	float battery_current;
 	float battery_voltage;
 	float solar_panel_voltage;
@@ -225,8 +230,8 @@ static inline char findAxis(struct xyz32 *axis) {
 /* Topics with buffers and subscribers */
 
 /*! internal - communication between threads */
-extern Topic<tmStructIMU> imu_topic;
-static CommBuffer<tmStructIMU> imuBuffer;
+extern Topic<imuData> imu_topic;
+static CommBuffer<imuData> imuBuffer;
 static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
 
 extern Topic<tmStructElectrical> electrical_topic;
