@@ -1,10 +1,3 @@
-/*
- * Sccb.cpp
- *
- *  Created on: 12.01.2015
- *      Author: Andreas Schartel
- */
-
 #include "../Peripheral/Sccb.h"
 
 void Sccb::I2CInit(void) {

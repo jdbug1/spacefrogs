@@ -120,7 +120,7 @@ void hwInit() {
 	myNodeNr= *(long*)STM32F4_UID;
 
 	//UART for stdout
-	uart_stdout.init(115200);
+	uart_stdout.init(921600);
 	//uart_stdout.config(UART_PARAMETER_ENABLE_DMA,32);
 	//uart_stdout.config(UART_PARAMETER_HW_FLOW_CONTROL, 1); // necessary for bluetooth module
 

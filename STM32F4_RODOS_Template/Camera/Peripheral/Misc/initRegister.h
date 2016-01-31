@@ -1,10 +1,3 @@
-/*
- * initRegister.h
- *
- *  Created on: 01.12.2014
- *      Author: Andreas Schartel
- */
-
 #ifndef INITREGISTER_H_
 #define INITREGISTER_H_
 

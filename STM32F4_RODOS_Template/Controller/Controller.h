@@ -19,7 +19,7 @@ private:
 	PID* pid;
 	PI*  pi;
 	Electrical* El;
-	bool control;
+	bool control, enable_control;
 
 public:
 	Controller(const char* name, Electrical* El);
@@ -33,6 +33,7 @@ public:
 	void set_control(bool control);
 	void set_Velocity(float rev_val);
 	void set_Reference_Angle(float ref_angle);
+	void enableControl();
 
 };
 

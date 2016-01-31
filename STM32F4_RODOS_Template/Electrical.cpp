@@ -15,6 +15,7 @@
 #define ADC_VOLTAGE_SCALE_FACTOR		(4.9/3735.0)	//raw to V
 #define ADC_CURRENT_SCALE_FACTOR		(29.0/411.0)	//raw to mA
 
+/* ADCs for solar panel voltage and current */
 HAL_ADC Solar_Voltage(ADC_IDX1);
 HAL_ADC Solar_Current(ADC_IDX1);
 
@@ -79,10 +80,6 @@ void Electrical::run() {
 	Solar_Voltage.init(SolarVoltageADC_1);
 	Solar_Current.init(SolarCurrentADC_2);
 
-
-//	HAL_I2C_2.init(400000);
-//	HAL_I2C_1.init(400000);
-
 	//Generate new currentsensor object
 	Currentsensor battery_current(BATTERY_CURRENT);
 	battery_current.begin(BATTERY_CURRENT);
@@ -94,7 +91,7 @@ void Electrical::run() {
 	ELECTROMAGNET.init(true, 1, 0);
 	HBDRIGE_D_PWM.init(true, 1, 1);
 
-	MAIN_ENGINE_A.init(1000,1000);
+	MAIN_ENGINE_A.init(10000,1000);
 	HBRIDGE_A_INA.init(true, 1, 1);
 	HBRIDGE_A_INB.init(true, 1, 0);
 
@@ -108,10 +105,11 @@ void Electrical::run() {
 
 	int retVal = HAL_I2C_2.write(LIGHT_SLAVE,LIGHT_CONTROL_REGISTER,2);
 
-	int16_t channel_0, channel_1;
+	uint16_t channel_0, channel_1;
 	int64_t t1 = 0;
 	int64_t t2 = 0;
 	float diff = 0;
+	tmStructLight light;
 	while (1) {
 		if (deploy_racks) {
 			if (current_tc.value == 0) {
@@ -137,8 +135,9 @@ void Electrical::run() {
 		}
 		if (lightsensor) {
 			readLightsensor(&channel_0,&channel_1);
+			light.light_value = channel_0;
 		}
-
+		light_topic.publish(light);
 		readADCCurrent();
 		readADCVoltage();
 
@@ -147,17 +146,12 @@ void Electrical::run() {
 		values.thermal_knife = thermal_knife;
 		values.racks = racks;
 		values.solar_panels = solar_panels;
-		values.lightsensor_value = float(channel_0);
-		values.battery_current = 0;
-		values.battery_voltage = 0;
+		values.battery_current = battery_current.getCurrent_mA();
+		values.battery_voltage = battery_current.getBusVoltage_V();
 		values.solar_panel_current = solar_panel_current;
 		values.solar_panel_voltage = solar_panel_voltage;
-//		PRINTF("Current %5.2fmA Voltage %5.2fV\n",values.solar_panel_current, values.solar_panel_voltage);
 		electrical_topic.publish(values);
-//		PRINTF("Battery Current is %f Voltage is %f\n",battery_current.getCurrent_mA(), battery_current.getBusVoltage_V());
 		suspendCallerUntil(NOW()+ELECTRICAL_SAMPLING_RATE*MILLISECONDS);
-//		PRINTF("Solar Voltage %d V\n",Solar_Voltage.read(SolarVoltageADC_1));
-//		PRINTF("Solar Current %d A\n",Solar_Current.read(SolarCurrentADC_2));
 	}
 }
 
@@ -202,7 +196,7 @@ void Electrical::setMainMotorSpeed(int *speed) {
 		HBRIDGE_A_INA.setPins(0);
 		HBRIDGE_A_INB.setPins(1);
 	}
-	MAIN_ENGINE_A.write(abs(*speed * 10));
+	MAIN_ENGINE_A.write(abs(*speed *10));
 //	PRINTF("Main engine duty cycle set to %d%%\n",*speed);
 }
 
@@ -273,6 +267,11 @@ void Electrical::setMagnet(int *status) {
 		ELECTROMAGNET.setPins(0);
 		electromagnet = false;
 	}
+	/**
+	 *
+	 * pick up washer, remove it and start again...still lot of stuff to do, but you know, time, resources, ...
+	 *
+	 */
 //	PRINTF("Electromagnet %s %d\n",(*status == 1)?"activated":"deactivated",*status);
 }
 
@@ -281,19 +280,19 @@ void Electrical::setMagnet(int *status) {
  *
  * TODO lux implementation!
  */
-void Electrical::readLightsensor(int16_t *channel_0, int16_t *channel_1) {
+void Electrical::readLightsensor(uint16_t *channel_0, uint16_t *channel_1) {
 	uint8_t data[2];
 	int retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_0_LOW,1,data,2);
-	*channel_0 = data[1] << 8 | data[0];
+	*channel_0 = 256*data[1] | data[0];
 
 	retVal = HAL_I2C_2.writeRead(LIGHT_SLAVE,CHANNEL_1_LOW,1,data,2);
-	*channel_1 = data[1] << 8 | data[0];
+	*channel_1 = 256*data[1] | data[0];
 }
 
 /*
  * Activates and deactivates reading from lightsensor
  *
- * @param TODO bool *status 	Desired status of lightsensor
+ * @param int *status 	Desired status of lightsensor
  */
 void Electrical::setLightsensor(int *value) {
 	if (*value) {
@@ -305,6 +304,11 @@ void Electrical::setLightsensor(int *value) {
 	}
 }
 
+/*
+ * Handles rack deployment
+ *
+ * @param int *status 	1 --> deploy, -1 --> pull in, 0 --> stop!
+ */
 void Electrical::deployRacks(int *status) {
 	int speed1 = 18;
 	int speed2 = 20;
@@ -318,18 +322,30 @@ void Electrical::deployRacks(int *status) {
 		deploy_racks = false;
 	} else if (*status == -1) {
 		speed1 = -18;
-		speed2 = -19;
-		PRINTF("Pulling in with %d %d\n",speed1, speed2);
+		speed2 = -20;
 		setDeployment1Speed(&speed1);
 		setDeployment2Speed(&speed2);
 	}
 }
 
+/*
+ * Reads solar panel voltage from ADC
+ */
 void Electrical::readADCVoltage() {
 	solar_panel_voltage = ((float)Solar_Voltage.read(SolarVoltageADC_1)*ADC_VOLTAGE_SCALE_FACTOR);
 }
 
+/*
+ * Reads solar panel current from ADC
+ */
 void Electrical::readADCCurrent() {
 	solar_panel_current = ((float)Solar_Voltage.read(SolarCurrentADC_2)*ADC_CURRENT_SCALE_FACTOR);
 }
 
+/*
+ * Setter to control racks from outside
+ */
+void Electrical::setRacks(int *status) {
+	deploy_racks = (bool)*status;
+	current_tc.value = 1;
+}

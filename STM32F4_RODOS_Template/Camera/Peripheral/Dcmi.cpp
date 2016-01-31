@@ -1,10 +1,3 @@
-/*
- * Dcmi.cpp
- *
- *  Created on: 12.01.2015
- *      Author: Andreas Schartel
- */
-
 #include "Dcmi.h"
 
 Dcmi::Dcmi(uint32_t imageSize, uint32_t dmaMemoryAddress, uint16_t captureRate, uint16_t captureMode) {

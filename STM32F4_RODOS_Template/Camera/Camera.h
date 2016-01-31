@@ -21,8 +21,6 @@
 
 #define CAPTUREMODE					DCMI_CaptureMode_SnapShot
 #define FRAMERATE					DCMI_CaptureRate_All_Frame
-//#define CAPTUREMODE				DCMI_CaptureMode_Continuous
-//#define FRAMERATE					DCMI_CaptureRate_1of4_Frame
 #define DCMI_DR_ADDRESS      		0x50050028
 #define IMAGESIZE					(HEIGHT*WIDTH*2)
 #define THRESHOLD					165
@@ -53,7 +51,6 @@ private:
 	void InitOV7670();
 	void delayx(unsigned int ms);
 	void Capture();
-	void DetectSatellite();
 public:
 	Camera(const char* name, HAL_UART uart);
 	void init();
@@ -62,7 +59,7 @@ public:
 	void handleTelecommand(tcStruct *tc);
 	uint8_t* getPicture();
 	void sendPicture(bool value);
-	void ProcessData();
+	bool ProcessData();
 	void turnOn(void);
 	void turnOff(void);
 	void initialize();

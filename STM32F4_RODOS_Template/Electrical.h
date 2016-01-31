@@ -38,11 +38,12 @@ public:
 	void setDeployment2Speed(int *speed);
 	void setKnife(int *status);
 	void setMagnet(int *status);
-	void readLightsensor(int16_t *channel_0, int16_t *channel_1);
+	void readLightsensor(uint16_t *channel_0, uint16_t *channel_1);
 	void setLightsensor(int *value);
 	void deployRacks(int *status);
 	void readADCVoltage();
 	void readADCCurrent();
+	void setRacks(int *status);
 
 private:
 	tcStruct current_tc;

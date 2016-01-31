@@ -1,10 +1,3 @@
-/*
- * Sccb.h
- *
- *  Created on: 12.01.2015
- *      Author: Andreas Schartel
- */
-
 #ifndef PERIPHERAL_SCCB_H_
 #define PERIPHERAL_SCCB_H_
 

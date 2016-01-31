@@ -1,10 +1,3 @@
-/*
- * initRegister.cpp
- *
- *  Created on: 28.01.2015
- *      Author: Andreas Schartel
- */
-
 #include "rodos.h"
 
 #ifndef INITREGISTER_H_
@@ -139,7 +132,7 @@ uint8_t init_registers[][2]  = {
 		{0x4b, 0x09},
 		{0xc9, 0xc0},
 		{0x41, 0x38},
-		{0x56, 0x40},//0x40,  change according to Jim's request
+		{0x56, 0x40},//0x40
 		{0x34, 0x11},
 		{0x3b, 0x02},//0x00,//0x02,
 		{0xa4, 0x89},//0x88,
@@ -180,7 +173,6 @@ uint8_t init_registers[][2]  = {
 		{0x55, 0x00},
 		{0x56, 0x40},
 		{0x3b, 0x42},//0x82,//0xc0,//0xc2,	//night mode
-		// #########################################################################
 		// END MARKER
 		{ 0xff, 0xff },
 };

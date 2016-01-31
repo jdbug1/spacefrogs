@@ -22,6 +22,8 @@ uint8_t CTRL_REG7_XM[2] = {0x26, 0b10000000}; //Normal mode (00) + internal filt
 /* Starting adresses for sensors */
 uint8_t LSM9DS0_OUT_X_L_G[1] = {0x28 | 0x80}; // Gyroscope OUT_X_L address with multiple bytes indicator (0x80)
 uint8_t LSM9DS0_OUT_X_L_A[1] = {0x28 | 0x80}; // Accelerometer OUT_X_L address with multiple bytes indicator (0x80)
+uint8_t LSM9DS0_OUT_X_L_M[1] = {0x08 | 0x80}; // Accelerometer OUT_X_L address with multiple bytes indicator (0x80)
+
 
 /** IMU specific data LSM303DLH */
 /* Magnetometer control registers */
@@ -35,6 +37,17 @@ HAL_GPIO CS_G(GPIO_018); 		/* declare HAL_GPIO for GPIO_018 = PB2 (IMU Chip Sele
 HAL_GPIO IMU_EN(GPIO_055); 		/* declare HAL_GPIO for GPIO_055 = PD7 (IMU Power Enable pin) */
 HAL_GPIO USERBUTTON(GPIO_000); 	//UserButton
 
+float heading_buffer[8];
+int head = 0;
+void put_heading(float value) {
+	heading_buffer[head] = value;
+	head++;
+	if (head == 8) head = 0;
+}
+
+float get_heading() {
+	return ((heading_buffer[0] + heading_buffer[1] + heading_buffer[2] + heading_buffer[3] + heading_buffer[4] + heading_buffer[5] + heading_buffer[6] + heading_buffer[7])/8.0);
+}
 /*
  * The rotation matrix from the matlab script
  */
@@ -162,21 +175,30 @@ void IMU::run() {
 			calculateMag();
 			calculateAcc();
 			complementaryFilter();
-			if (counter <= MEAN_FILTER_SAMPLES - 1) {
-				counter++;
-				temp_heading += ahrs_euler.heading;
-				temp_heading_xm += xm_euler.heading;
-				temp_heading_gyro += gyro_euler.heading;
-			} else if (counter == MEAN_FILTER_SAMPLES) {
-				imu_data.heading = temp_heading/(float)MEAN_FILTER_SAMPLES;
-				imu_data.gyro_heading = temp_heading_gyro/(float)MEAN_FILTER_SAMPLES;
-				imu_data.xm_heading = temp_heading_xm/(float)MEAN_FILTER_SAMPLES;
-				imu_data.roll = ahrs_euler.roll;
-				imu_data.pitch = ahrs_euler.pitch;
-				imu_topic.publish(imu_data);
-				temp_heading = temp_heading_xm = temp_heading_gyro = 0;
-				counter = 0;
-			}
+			put_heading(ahrs_euler.heading);
+
+			imu_data.heading = get_heading();
+			imu_data.gyro_heading = gyro_euler.heading;
+			imu_data.xm_heading = xm_euler.heading;
+			imu_data.roll = ahrs_euler.roll;
+			imu_data.pitch = ahrs_euler.pitch;
+			imu_topic.publish(imu_data);
+
+//			if (counter <= MEAN_FILTER_SAMPLES - 1) {
+//				counter++;
+//				temp_heading += ahrs_euler.heading;
+//				temp_heading_xm += xm_euler.heading;
+//				temp_heading_gyro += gyro_euler.heading;
+//			} else if (counter == MEAN_FILTER_SAMPLES) {
+//				imu_data.heading = temp_heading/(float)MEAN_FILTER_SAMPLES;
+//				imu_data.gyro_heading = temp_heading_gyro/(float)MEAN_FILTER_SAMPLES;
+//				imu_data.xm_heading = temp_heading_xm/(float)MEAN_FILTER_SAMPLES;
+//				imu_data.roll = ahrs_euler.roll;
+//				imu_data.pitch = ahrs_euler.pitch;
+//				imu_topic.publish(imu_data);
+//				temp_heading = temp_heading_xm = temp_heading_gyro = 0;
+//				counter = 0;
+//			}
 		}
 
 //		t2 = NOW();
@@ -210,7 +232,6 @@ void IMU::put(tcStruct &command) {
 
 void IMU::handleTelecommand(tcStruct * tc) {
 	int command = tc->command;
-	PRINTF("Command was %d\n",command);
 	switch(command) {
 	case 1001:
 		this->calibrate_magnetometer = true;
@@ -220,9 +241,6 @@ void IMU::handleTelecommand(tcStruct * tc) {
 		break;
 	case 1003:
 		this->calibrate_gyroscope = true;
-		break;
-	case 1004:
-		this->alpha = (tc->value/100.0);
 		break;
 	}
 }
@@ -499,7 +517,7 @@ void IMU::calculateHeading() {
 	float mxh, myh = 0.0;
 	mxh = imu_data.mx * cp + imu_data.mz * sp;
 	myh = imu_data.mx * sr * sp + imu_data.my * cr - imu_data.mz * sr * cp;
-	xm_euler.heading = atan2(myh,mxh);
+	xm_euler.heading = -atan2(myh,mxh);
 	if (xm_euler.heading < 0) xm_euler.heading +=2*M_PI;
 }
 
@@ -540,6 +558,7 @@ void IMU::complementaryFilter() {
 		//make sure angle stays between 0 and 360 degrees
 		if (ahrs_euler.heading > 2*M_PI) ahrs_euler.heading -=2*M_PI;
 		if (ahrs_euler.heading < 0) ahrs_euler.heading += 2*M_PI;
+
 	}
 }
 

@@ -33,16 +33,18 @@ public:
   void run() {
 
 	  imuData imu;
-	  tmStructElectrical lightValues;
+	  tmStructElectrical electrical;
 
 	  tmStructIMU imu_publish;
+	  tmStructLight light;
 
 	  wf121.init("YETENet","yeteyete");
 	  wf121.enableUDPConnection(0xFF01A8C0,37647);
 	  while (1) {
 		  if (send_telemetry) {
 			  imuBuffer.get(imu);
-			  electricalBuffer.get(lightValues);
+			  electricalBuffer.get(electrical);
+			  lightBuffer.get(light);
 
 			  imu_publish.ax = imu.ax;
 			  imu_publish.ay = imu.ay;
@@ -57,7 +59,8 @@ public:
 			  imu_publish.gyro_heading = imu.gyro_heading;
 			  imu_publish.calibrating = imu.calibrating;
 			  tm_topic_imu.publish(imu_publish);
-			  tm_topic_electrical.publish(lightValues);
+			  tm_topic_electrical.publish(electrical);
+			  tm_topic_light.publish(light);
 
 		  }
 		  suspendCallerUntil(NOW()+250*MILLISECONDS);

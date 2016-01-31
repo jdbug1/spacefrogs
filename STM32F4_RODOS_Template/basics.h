@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 
-/* adresses */
+/* I2C adresses */
 #define LSM9DS0_G		0x6B
 #define LSM9DS0_XM		0x1D
 #define LIGHT_SLAVE		0x39
@@ -35,7 +35,7 @@
 #define MEAN_FILTER_SAMPLES		4		// simple low pass filter
 
 /* important AHRS values */
-#define ALPHA 0.9					// gain of complementary filter
+#define ALPHA 0.80					// gain of complementary filter --> 0.8 because of gyro noise
 
 /* I2Cs */
 extern HAL_I2C HAL_I2C_1;
@@ -46,6 +46,15 @@ extern HAL_I2C HAL_I2C_2;
 #define ELECTRICAL_SAMPLING_RATE	50
 #define TELEMETRY_SAMPLING_RATE		250
 
+/* mission defines */
+#define FIND_SUN_DURATION		30
+#define BURN_WIRE_DURATION		12
+#define DEPLOY_RACKS_DURATION	12
+
+#define START_ANGLE (210.0*M_PI/180.0)
+#define STOP_ANGLE (300.0*M_PI/180.0)
+
+//to get new operator working under arm
 extern void * operator new(size_t size);
 
 /* important structs */
@@ -130,7 +139,6 @@ struct tmStructElectrical {
 	bool thermal_knife;
 	bool racks;
 	bool solar_panels;
-	float lightsensor_value;
 	float battery_current;
 	float battery_voltage;
 	float solar_panel_voltage;
@@ -138,7 +146,13 @@ struct tmStructElectrical {
 };
 
 struct tmStructMission {
+	int part_number;
+	float angle;
+	bool cleaned;
+};
 
+struct tmStructLight {
+	uint16_t light_value;
 };
 
 struct tcStruct {
@@ -147,17 +161,27 @@ struct tcStruct {
 	int value;
 };
 
+
+
 /* enums */
 enum mission_states {
 	START,
 	CALIBRATE,
 	FIND_SUN,
+	STEER_TO_SUN,
 	DEPLOY_PANELS,
-	SEND_PICTURE,
 	START_MISSION,
 	FIND_DEBRIS,
 	TRANSPORT_DEBRIS,
 	END_MISSION,
+};
+
+enum picture_finder {
+	STEER_TO,
+	TAKE_PICTURE,
+	PROCESS_DATA,
+	PICKUP_WASHER,
+	REMOVE_WASHER,
 };
 
 /* useful functions */
@@ -236,7 +260,11 @@ static Subscriber imuSubscriber(imu_topic, imuBuffer, "IMU Subscriber");
 
 extern Topic<tmStructElectrical> electrical_topic;
 static CommBuffer<tmStructElectrical> electricalBuffer;
-static Subscriber lightSubscriber(electrical_topic,electricalBuffer, "Electrical Subscriber");
+static Subscriber electricalSubscriber(electrical_topic,electricalBuffer, "Electrical Subscriber");
+
+extern Topic<tmStructLight> light_topic;
+static CommBuffer<tmStructLight> lightBuffer;
+static Subscriber lightSubscriber(light_topic,lightBuffer, "Light Subscriber");
 
 /*! external - telemetry*/
 extern Topic<tmStructIMU> tm_topic_imu;
@@ -250,6 +278,10 @@ static Subscriber tmElectricalSubscriber(tm_topic_electrical, tmElectricalBuffer
 extern Topic<tmStructMission> tm_topic_mission;
 static CommBuffer<tmStructMission> tmMissionBuffer;
 static Subscriber tmMissionSubscriber(tm_topic_mission, tmMissionBuffer, "Telemetry Mission Subscriber");
+
+extern Topic<tmStructLight> tm_topic_light;
+static CommBuffer<tmStructLight> tmLightBuffer;
+static Subscriber tmLightSubscriber(tm_topic_light, tmLightBuffer, "Telemetry Light Subscriber");
 
 extern Topic<tcStruct> tm_topic_incoming;
 
